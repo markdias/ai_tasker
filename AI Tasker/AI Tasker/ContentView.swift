@@ -97,9 +97,8 @@ struct ContentView: View {
         withAnimation(.easeInOut) {
             offsets.map { tasks[$0] }.forEach { task in
                 // Cancel any scheduled notifications for this task
-                if let taskId = task.objectID.uriRepresentation().lastPathComponent {
-                    NotificationManager.shared.cancelTaskReminder(taskId: taskId)
-                }
+                let taskId = task.objectID.uriRepresentation().lastPathComponent
+                NotificationManager.shared.cancelTaskReminder(taskId: taskId)
                 viewContext.delete(task)
             }
             do {
@@ -122,19 +121,19 @@ struct TaskRowView: View {
                 Button(action: {
                     toggleCompletion()
                 }) {
-                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    Image(systemName: task.isCompletedFlag ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20))
-                        .foregroundColor(task.isCompleted ? .green : .gray)
+                        .foregroundColor(task.isCompletedFlag ? .green : .gray)
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(task.title ?? "")
+                    Text(task.title)
                         .font(.headline)
-                        .strikethrough(task.isCompleted, color: .gray)
-                        .foregroundColor(task.isCompleted ? .gray : .primary)
+                        .strikethrough(task.isCompletedFlag, color: .gray)
+                        .foregroundColor(task.isCompletedFlag ? .gray : .primary)
 
-                    if let description = task.description, !description.isEmpty {
+                    if let description = task.taskDescription, !description.isEmpty {
                         Text(description)
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -151,7 +150,7 @@ struct TaskRowView: View {
                                 .cornerRadius(6)
                         }
 
-                        if let priority = task.priority {
+                        if let priority = task.priority, !priority.isEmpty {
                             Label(priority, systemImage: priorityIcon(priority))
                                 .font(.caption2)
                                 .foregroundColor(priorityColor(priority))
@@ -172,8 +171,8 @@ struct TaskRowView: View {
 
     private func toggleCompletion() {
         withAnimation {
-            task.isCompleted.toggle()
-            task.updatedAt = Date()
+            task.isCompletedFlag.toggle()
+            task.updatedAtValue = Date()
             do {
                 try viewContext.save()
             } catch {
@@ -280,7 +279,10 @@ struct GoalInputView: View {
                 }
             }
             .alert("Error", isPresented: $showErrorAlert) {
-                Button("OK") { }
+                Button("Copy") {
+                    UIPasteboard.general.string = errorMessage
+                }
+                Button("OK", role: .cancel) { }
             } message: {
                 Text(errorMessage)
             }
@@ -310,7 +312,12 @@ struct GoalInputView: View {
                 switch result {
                 case .success(let generatedTasks):
                     saveTasks(generatedTasks.map { generatedTask in
-                        (title: generatedTask.title, description: generatedTask.description, time: generatedTask.estimatedTime, priority: generatedTask.priority)
+                        (
+                            title: generatedTask.title,
+                            description: generatedTask.description,
+                            time: generatedTask.estimatedTime,
+                            priority: generatedTask.priority
+                        )
                     })
                 case .failure(let error):
                     errorMessage = error.localizedDescription
@@ -322,7 +329,7 @@ struct GoalInputView: View {
 
     private func generateDummyTasks() {
         let goalKeywords = goalDescription.lowercased()
-        var generatedTasks: [(title: String, description: String, time: Int16, priority: String)] = []
+        var generatedTasks: [(title: String, description: String?, time: Int16, priority: String)] = []
 
         if goalKeywords.contains("study") || goalKeywords.contains("learn") {
             generatedTasks.append(("Review study materials", "Go through notes and key concepts", 45, "high"))
@@ -349,20 +356,21 @@ struct GoalInputView: View {
         saveTasks(generatedTasks)
     }
 
-    private func saveTasks(_ generatedTasks: [(title: String, description: String, time: Int16, priority: String)]) {
+    private func saveTasks(_ generatedTasks: [(title: String, description: String?, time: Int16, priority: String)]) {
         let sessionId = UUID().uuidString
 
         withAnimation {
             for (title, description, time, priority) in generatedTasks {
                 let newTask = Task(context: viewContext)
                 newTask.title = title
-                newTask.description = description
+                let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
+                newTask.taskDescription = (trimmedDescription?.isEmpty == false) ? trimmedDescription : nil
                 newTask.estimatedTime = time
                 newTask.priority = priority
                 newTask.category = selectedCategory
-                newTask.isCompleted = false
-                newTask.createdAt = Date()
-                newTask.updatedAt = Date()
+                newTask.isCompletedFlag = false
+                newTask.createdAtValue = Date()
+                newTask.updatedAtValue = Date()
                 newTask.sessionId = sessionId
             }
 
