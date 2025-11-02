@@ -80,15 +80,38 @@ final class ProjectLocal {
     var taskCount: Int = 0
     var completedTaskCount: Int = 0
     @Relationship(deleteRule: .cascade, inverse: \TaskLocal.project) var tasks: [TaskLocal] = []
+
+    // M4: Project Management
+    var dueDate: Date?
+    var budget: Double = 0
+    var status: String = "active" // "active", "completed", "archived"
+
     var createdAt: Date
     var updatedAt: Date
 
-    init(id: String = UUID().uuidString, title: String, projectDescription: String? = nil, createdAt: Date = Date(), updatedAt: Date = Date()) {
+    init(id: String = UUID().uuidString, title: String, projectDescription: String? = nil, dueDate: Date? = nil, budget: Double = 0, createdAt: Date = Date(), updatedAt: Date = Date()) {
         self.id = id
         self.title = title
         self.projectDescription = projectDescription
+        self.dueDate = dueDate
+        self.budget = budget
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+
+    // Computed property for total cost from all tasks
+    var totalTaskCost: Double {
+        tasks.reduce(0) { $0 + $1.cost }
+    }
+
+    // Computed property for remaining budget
+    var remainingBudget: Double {
+        budget - totalTaskCost
+    }
+
+    // Computed property for budget percentage used
+    var budgetPercentageUsed: Double {
+        budget > 0 ? (totalTaskCost / budget) : 0
     }
 }
 
