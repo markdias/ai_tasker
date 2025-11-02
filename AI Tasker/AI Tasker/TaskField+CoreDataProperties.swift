@@ -18,7 +18,7 @@ extension TaskField {
     @NSManaged public var fieldValue: String?
     @NSManaged public var fieldOrder: Int16
     @NSManaged public var createdAt: Date?
-    @NSManaged public var task: Task?
+    @NSManaged public var task: Task?  // Optional relationship
 }
 
 extension TaskField: Identifiable {}

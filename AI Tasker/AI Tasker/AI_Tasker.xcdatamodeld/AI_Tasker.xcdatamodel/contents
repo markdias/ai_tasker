@@ -25,12 +25,12 @@
         <relationship name="fields" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TaskField" inverseName="task" inverseEntity="TaskField"/>
     </entity>
     <entity name="TaskField" representedClassName="TaskField" syncable="YES" codeGenerationType="none">
-        <attribute name="fieldName" optional="NO" attributeType="String"/>
+        <attribute name="fieldName" optional="NO" attributeType="String" defaultValue="Field"/>
         <attribute name="fieldType" optional="NO" attributeType="String" defaultValue="text"/>
         <attribute name="fieldValue" optional="YES" attributeType="String"/>
         <attribute name="fieldOrder" optional="YES" attributeType="Integer 16" defaultValue="0" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <relationship name="task" optional="NO" maxCount="1" deletionRule="Cascade" destinationEntity="Task" inverseName="fields" inverseEntity="Task"/>
+        <relationship name="task" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="Task" inverseName="fields" inverseEntity="Task"/>
     </entity>
     <elements>
         <element name="Project" positionX="-63" positionY="-234" width="128" height="163"/>
