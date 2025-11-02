@@ -7,7 +7,6 @@
 
 import UserNotifications
 import CoreData
-import UIKit
 
 class NotificationManager {
     static let shared = NotificationManager()
@@ -37,7 +36,7 @@ class NotificationManager {
         content.title = "Task Reminder"
         content.body = task.title
         content.sound = .default
-        content.badge = NSNumber(value: UIApplication.shared.applicationIconBadgeNumber + 1)
+        content.badge = 1
 
         // Add custom data
         content.userInfo = [
@@ -51,23 +50,30 @@ class NotificationManager {
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
         let request = UNNotificationRequest(identifier: taskId, content: content, trigger: trigger)
 
-        UNUserNotificationCenter.current().add(request) { error in
+        let notificationCenter = UNUserNotificationCenter.current()
+        notificationCenter.add(request) { error in
             if let error = error {
                 print("Error scheduling notification: \(error.localizedDescription)")
             } else {
                 print("Notification scheduled for task: \(task.title)")
             }
         }
+
+        notificationCenter.setBadgeCount(1, withCompletionHandler: nil)
     }
 
     // MARK: - Cancel Task Reminder
     func cancelTaskReminder(taskId: String) {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [taskId])
+        let notificationCenter = UNUserNotificationCenter.current()
+        notificationCenter.removePendingNotificationRequests(withIdentifiers: [taskId])
+        notificationCenter.setBadgeCount(0, withCompletionHandler: nil)
     }
 
     // MARK: - Cancel All Reminders
     func cancelAllReminders() {
-        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        let notificationCenter = UNUserNotificationCenter.current()
+        notificationCenter.removeAllPendingNotificationRequests()
+        notificationCenter.setBadgeCount(0, withCompletionHandler: nil)
     }
 
     // MARK: - Schedule Multiple Reminders

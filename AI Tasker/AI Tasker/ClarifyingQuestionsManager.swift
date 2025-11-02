@@ -120,7 +120,7 @@ class ClarifyingQuestionsManager {
             }
 
             do {
-                let result = try JSONDecoder().decode(ChatGPTResponse.self, from: data)
+                let result = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
                 if let content = result.choices.first?.message.content {
                     let questions = try self.parseQuestions(from: content)
                     completion(.success(questions))
@@ -217,9 +217,9 @@ class ClarifyingQuestionsManager {
             }
 
             do {
-                let result = try JSONDecoder().decode(ChatGPTResponse.self, from: data)
+                let result = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
                 if let content = result.choices.first?.message.content {
-                    let tasks = try self.parseTasks(from: content)
+                    let tasks = try OpenAIManager.shared.parseGeneratedTasks(from: content)
                     completion(.success(tasks))
                 } else {
                     completion(.failure(.noContent))
@@ -240,7 +240,7 @@ class ClarifyingQuestionsManager {
             return array.map { dto in
                 ClarifyingQuestion(
                     question: dto.question,
-                    type: QuestionType(rawValue: dto.type) ?? .freeText,
+                    type: ClarifyingQuestion.QuestionType(rawValue: dto.type) ?? .freeText,
                     options: dto.options
                 )
             }
@@ -249,18 +249,6 @@ class ClarifyingQuestionsManager {
         throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1))
     }
 
-    // MARK: - Parse Tasks
-    private func parseTasks(from jsonString: String) throws -> [GeneratedTask] {
-        guard let data = jsonString.data(using: .utf8) else {
-            throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1))
-        }
-
-        if let array = try? JSONDecoder().decode([GeneratedTask].self, from: data) {
-            return array
-        }
-
-        throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1))
-    }
 }
 
 // MARK: - DTOs
@@ -270,13 +258,29 @@ private struct QuestionDTO: Decodable {
     let options: [String]?
 }
 
+private struct ChatCompletionResponse: Decodable {
+    let choices: [Choice]
+
+    struct Choice: Decodable {
+        let message: Message
+
+        struct Message: Decodable {
+            let content: String
+        }
+    }
+}
+
 private extension ClarifyingQuestion.QuestionType {
     init?(rawValue: String) {
         switch rawValue.lowercased() {
         case "freetext": self = .freeText
         case "multiplechoice": self = .multipleChoice
+        case "multiple_choice": self = .multipleChoice
+        case "multiple choice": self = .multipleChoice
         case "date": self = .date
         case "number": self = .number
+        case "free_text": self = .freeText
+        case "free text": self = .freeText
         default: return nil
         }
     }

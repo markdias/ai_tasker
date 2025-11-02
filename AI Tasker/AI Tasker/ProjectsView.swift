@@ -355,17 +355,17 @@ struct TaskListRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Button(action: toggleCompletion) {
-                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                Image(systemName: task.isCompletedFlag ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 18))
-                    .foregroundColor(task.isCompleted ? .green : .gray)
+                    .foregroundColor(task.isCompletedFlag ? .green : .gray)
             }
             .buttonStyle(PlainButtonStyle())
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(task.title ?? "")
                     .font(.body)
-                    .strikethrough(task.isCompleted, color: .gray)
-                    .foregroundColor(task.isCompleted ? .gray : .primary)
+                    .strikethrough(task.isCompletedFlag, color: .gray)
+                    .foregroundColor(task.isCompletedFlag ? .gray : .primary)
 
                 if let desc = task.taskDescription {
                     Text(desc)
@@ -395,8 +395,8 @@ struct TaskListRow: View {
 
     private func toggleCompletion() {
         withAnimation {
-            task.isCompleted.toggle()
-            task.updatedAt = Date()
+            task.isCompletedValue.toggle()
+            task.updatedAtValue = Date()
 
             do {
                 try viewContext.save()

@@ -122,7 +122,7 @@ class OpenAIManager {
                 let result = try JSONDecoder().decode(ChatGPTResponse.self, from: data)
 
                 if let content = result.choices.first?.message.content {
-                    let tasks = try self.parseTasks(from: content)
+                    let tasks = try self.parseGeneratedTasks(from: content)
                     completion(.success(tasks))
                 } else {
                     completion(.failure(.noContent))
@@ -134,7 +134,7 @@ class OpenAIManager {
     }
 
     // MARK: - Parse Tasks
-    private func parseTasks(from jsonString: String) throws -> [GeneratedTask] {
+    func parseGeneratedTasks(from jsonString: String) throws -> [GeneratedTask] {
         guard let data = jsonString.data(using: .utf8) else {
             throw OpenAIError.decodingFailed(NSError(domain: "JSONDecoding", code: -1))
         }
