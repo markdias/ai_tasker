@@ -239,15 +239,18 @@ struct OnboardingView: View {
                         .cornerRadius(8)
 
                         Button(action: {
-                            showAPIKeyInput = false
-                            apiKeySaved = false
-                            apiKeyInput = ""
+                            // Close the API key input form completely
+                            withAnimation {
+                                showAPIKeyInput = false
+                                apiKeySaved = false
+                                apiKeyInput = ""
+                            }
                         }) {
-                            Text("Continue")
+                            Text("Done")
                                 .font(.system(size: 14, weight: .semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(12)
-                                .background(Color.blue)
+                                .background(Color.green)
                                 .foregroundColor(.white)
                                 .cornerRadius(8)
                         }
