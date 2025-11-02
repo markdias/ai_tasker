@@ -32,186 +32,235 @@ struct TaskListView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Header with Settings Button
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(project.title)
-                        .font(.system(size: 24, weight: .bold))
-                    if let description = project.projectDescription {
-                        Text(description)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.gray)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+        ZStack {
+            Color(.systemBackground)
+                .ignoresSafeArea()
 
-                NavigationLink(destination: ProjectSettingsView(project: project)) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.blue)
-                        .padding(8)
-                }
-            }
-            .padding(16)
-
-            // Filter & Sort Controls
-            VStack(spacing: 12) {
-                // Status Filter
-                HStack(spacing: 8) {
-                    Text("Filter:")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.gray)
-
-                    Picker("Status", selection: $filterStatus) {
-                        Text("All").tag("all")
-                        Text("Pending").tag("pending")
-                        Text("In Progress").tag("in_progress")
-                        Text("Completed").tag("completed")
-                    }
-                    .pickerStyle(.segmented)
-                    .font(.system(size: 11))
-                }
-
-                // Sort Options
-                HStack(spacing: 8) {
-                    Text("Sort:")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.gray)
-
-                    Menu {
-                        Button(action: { sortBy = "created" }) {
-                            HStack {
-                                if sortBy == "created" {
-                                    Image(systemName: "checkmark")
-                                }
-                                Text("Date Created")
-                            }
-                        }
-                        Button(action: { sortBy = "dueDate" }) {
-                            HStack {
-                                if sortBy == "dueDate" {
-                                    Image(systemName: "checkmark")
-                                }
-                                Text("Due Date")
-                            }
-                        }
-                        Button(action: { sortBy = "cost" }) {
-                            HStack {
-                                if sortBy == "cost" {
-                                    Image(systemName: "checkmark")
-                                }
-                                Text("Cost")
-                            }
-                        }
-                    } label: {
-                        Text(sortLabel)
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(4)
-                    }
-
-                    Spacer()
-                }
-            }
-            .padding(.horizontal, 16)
-
-            if filteredAndSortedTasks.isEmpty {
-                // Empty State
-                VStack(spacing: 20) {
-                    Spacer()
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 48))
-                        .foregroundColor(.gray)
-                    VStack(spacing: 8) {
-                        Text(filterStatus == "all" ? "No Tasks" : "No \(filterStatus) Tasks")
-                            .font(.system(size: 18, weight: .semibold))
-                        Text("All tasks completed or no tasks yet")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.gray)
-                    }
-                    Spacer()
-                }
-            } else {
-                // Tasks List
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(filteredAndSortedTasks) { task in
-                            NavigationLink(destination: TaskDetailsView(task: task)) {
-                                TaskRowViewEnhanced(task: task)
-                            }
-                        }
-                    }
-                    .padding(16)
-                }
-            }
-
-            Spacer()
-
-            // Stats Footer with Budget
-            VStack(spacing: 12) {
-                HStack(spacing: 20) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Tasks")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.gray)
-                        Text("\(project.completedTaskCount)/\(project.taskCount)")
-                            .font(.system(size: 18, weight: .bold))
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Progress")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.gray)
-                        Text("\(Int(progressPercentage * 100))%")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.blue)
-                    }
-
-                    Spacer()
-                }
-
-                // Budget Bar (if budget is set)
-                if project.budget > 0 {
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Budget")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.gray)
-                            Text(String(format: "$%.2f / $%.2f", project.totalTaskCost, project.budget))
+            VStack(spacing: 0) {
+                // Header with gradient background
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(project.title)
+                            .font(.system(size: 26, weight: .bold))
+                        if let description = project.projectDescription {
+                            Text(description)
                                 .font(.system(size: 13, weight: .regular))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    NavigationLink(destination: ProjectSettingsView(project: project)) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .padding(10)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                }
+                .padding(16)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue.opacity(0.08),
+                            Color.purple.opacity(0.06)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+                // Filter & Sort Controls
+                VStack(spacing: 12) {
+                    // Status Filter
+                    HStack(spacing: 8) {
+                        Text("Filter:")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
+
+                        Picker("Status", selection: $filterStatus) {
+                            Text("All").tag("all")
+                            Text("Pending").tag("pending")
+                            Text("In Progress").tag("in_progress")
+                            Text("Completed").tag("completed")
+                        }
+                        .pickerStyle(.segmented)
+                        .font(.system(size: 11))
+                    }
+
+                    // Sort Options
+                    HStack(spacing: 8) {
+                        Text("Sort:")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
+
+                        Menu {
+                            Button(action: { sortBy = "created" }) {
+                                HStack {
+                                    if sortBy == "created" {
+                                        Image(systemName: "checkmark")
+                                    }
+                                    Text("Date Created")
+                                }
+                            }
+                            Button(action: { sortBy = "dueDate" }) {
+                                HStack {
+                                    if sortBy == "dueDate" {
+                                        Image(systemName: "checkmark")
+                                    }
+                                    Text("Due Date")
+                                }
+                            }
+                            Button(action: { sortBy = "cost" }) {
+                                HStack {
+                                    if sortBy == "cost" {
+                                        Image(systemName: "checkmark")
+                                    }
+                                    Text("Cost")
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "line.3.horizontal.decrease")
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text(sortLabel)
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(6)
                         }
 
                         Spacer()
-
-                        Text(String(format: "%.0f%%", project.budgetPercentageUsed * 100))
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(project.remainingBudget >= 0 ? .green : .red)
                     }
-
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color(.systemGray4))
-
-                            Capsule()
-                                .fill(project.remainingBudget >= 0 ? Color.blue : Color.red)
-                                .frame(width: geometry.size.width * min(project.budgetPercentageUsed, 1.0))
-                        }
-                        .frame(height: 6)
-                    }
-                    .frame(height: 6)
                 }
+                .padding(16)
+
+                if filteredAndSortedTasks.isEmpty {
+                    // Empty State
+                    VStack(spacing: 20) {
+                        Spacer()
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 56, weight: .semibold))
+                            .foregroundColor(.gray.opacity(0.4))
+                        VStack(spacing: 8) {
+                            Text(filterStatus == "all" ? "No Tasks" : "No \(filterStatus) Tasks")
+                                .font(.system(size: 18, weight: .semibold))
+                            Text("All tasks completed or no tasks yet")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                    }
+                } else {
+                    // Tasks List
+                    ScrollView {
+                        VStack(spacing: 14) {
+                            ForEach(filteredAndSortedTasks) { task in
+                                NavigationLink(destination: TaskDetailsView(task: task)) {
+                                    TaskRowViewEnhanced(task: task)
+                                }
+                            }
+                        }
+                        .padding(16)
+                    }
+                }
+
+                Spacer()
+
+                // Stats Footer with Budget
+                VStack(spacing: 14) {
+                    HStack(spacing: 20) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Tasks")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.gray)
+                            HStack(spacing: 4) {
+                                Text("\(project.completedTaskCount)")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.green)
+                                Text("/ \(project.taskCount)")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+
+                        Divider()
+                            .frame(height: 40)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Progress")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.gray)
+                            Text("\(Int(progressPercentage * 100))%")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.blue)
+                        }
+
+                        Spacer()
+                    }
+
+                    // Budget Bar (if budget is set)
+                    if project.budget > 0 {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Budget")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                    Text(String(format: "$%.2f / $%.2f", project.totalTaskCost, project.budget))
+                                        .font(.system(size: 13, weight: .semibold))
+                                }
+
+                                Spacer()
+
+                                Text(String(format: "%.0f%%", project.budgetPercentageUsed * 100))
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(project.remainingBudget >= 0 ? .green : .red)
+                            }
+
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color(.systemGray4).opacity(0.5))
+
+                                    Capsule()
+                                        .fill(project.remainingBudget >= 0 ?
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.green,
+                                                    Color.green.opacity(0.8)
+                                                ]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ) :
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.red,
+                                                    Color.red.opacity(0.8)
+                                                ]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(width: geometry.size.width * min(project.budgetPercentageUsed, 1.0))
+                                }
+                                .frame(height: 8)
+                            }
+                            .frame(height: 8)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Color(.systemGray6).opacity(0.5))
+                .cornerRadius(14)
+                .padding(16)
             }
-            .padding(16)
-            .background(Color(.systemGray6))
         }
-        .background(Color(.systemBackground))
         .navigationTitle("Tasks")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -288,8 +337,11 @@ struct TaskRowViewEnhanced: View {
                 // Status Icon (clickable for quick status change)
                 Button(action: toggleStatus) {
                     Image(systemName: statusIcon)
-                        .font(.system(size: 16))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(statusColor)
+                        .frame(width: 32, height: 32)
+                        .background(statusColor.opacity(0.1))
+                        .cornerRadius(8)
                 }
 
                 // Task Info
@@ -297,12 +349,13 @@ struct TaskRowViewEnhanced: View {
                     Text(task.title)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
+                        .lineLimit(1)
 
                     if let description = task.taskDescription {
                         Text(description)
                             .font(.system(size: 13, weight: .regular))
                             .foregroundColor(.gray)
-                            .lineLimit(2)
+                            .lineLimit(1)
                     }
                 }
 
@@ -317,31 +370,55 @@ struct TaskRowViewEnhanced: View {
                 }
                 .foregroundColor(.blue)
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
                 .background(Color.blue.opacity(0.1))
-                .cornerRadius(4)
+                .cornerRadius(6)
             }
 
             // Additional Details
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 if let dueDate = task.dueDate {
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.blue)
                         Text(dueDate.formatted(date: .abbreviated, time: .omitted))
                             .font(.system(size: 11, weight: .regular))
                     }
                     .foregroundColor(.gray)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.05))
+                    .cornerRadius(4)
                 }
 
                 if task.cost > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "dollarsign.circle.fill")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.green)
                         Text(String(format: "$%.2f", task.cost))
-                            .font(.system(size: 11, weight: .regular))
+                            .font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundColor(.green)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.05))
+                    .cornerRadius(4)
+                }
+
+                if let category = task.category {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tag.fill")
+                            .font(.system(size: 10))
+                        Text(category)
+                            .font(.system(size: 11, weight: .regular))
+                    }
+                    .foregroundColor(.purple)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.purple.opacity(0.1))
+                    .cornerRadius(4)
                 }
 
                 Spacer()
@@ -351,15 +428,28 @@ struct TaskRowViewEnhanced: View {
                     Image(systemName: nextStatusIcon)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(6)
-                        .background(Color.blue.opacity(0.8))
-                        .cornerRadius(4)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.blue,
+                                    Color.blue.opacity(0.8)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(6)
                 }
             }
         }
-        .padding(12)
-        .background(Color(.systemGray6))
+        .padding(14)
+        .background(Color(.systemGray6).opacity(0.5))
         .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.blue.opacity(0.08), lineWidth: 1)
+        )
     }
 
     private func toggleStatus() {

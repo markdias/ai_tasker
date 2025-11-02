@@ -139,6 +139,9 @@ final class TaskLocal {
     var cost: Double = 0
     var linkedListId: String? // for linking to list tasks for budget tracking
 
+    // M6+: Categories and Tags
+    var category: String? // optional category/tag for task organization
+
     // M5: Reminders Sync
     var reminderId: String? // Apple Reminders event identifier
 
@@ -157,6 +160,7 @@ final class TaskLocal {
         inputSchemaJSON: String? = nil,
         dataJSON: String? = nil,
         dueDate: Date? = nil,
+        category: String? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -169,6 +173,7 @@ final class TaskLocal {
         self.inputSchemaJSON = inputSchemaJSON
         self.dataJSON = dataJSON
         self.dueDate = dueDate
+        self.category = category
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

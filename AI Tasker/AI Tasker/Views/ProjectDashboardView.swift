@@ -7,46 +7,74 @@ struct ProjectDashboardView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Your Projects")
-                        .font(.system(size: 28, weight: .bold))
-                    Text("\(projects.count) project\(projects.count == 1 ? "" : "s")")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.gray)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
+            ZStack {
+                Color(.systemBackground)
+                    .ignoresSafeArea()
 
-                if projects.isEmpty {
-                    EmptyStateView(appState: appState)
-                } else {
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            ForEach(projects) { project in
-                                ProjectCard(project: project)
-                            }
-                        }
-                        .padding(16)
+                VStack(spacing: 0) {
+                    // Header with gradient background
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Your Projects")
+                            .font(.system(size: 28, weight: .bold))
+                        Text("\(projects.count) project\(projects.count == 1 ? "" : "s")")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.gray)
                     }
-                }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.blue.opacity(0.08),
+                                Color.purple.opacity(0.06)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
 
-                Spacer()
+                    if projects.isEmpty {
+                        EmptyStateView(appState: appState)
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 16) {
+                                ForEach(projects) { project in
+                                    ProjectCard(project: project)
+                                }
+                            }
+                            .padding(16)
+                        }
+                    }
 
-                // New Project Button
-                Button(action: createNewProject) {
-                    Text("Create New Project")
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(16)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                    Spacer()
+
+                    // New Project Button
+                    VStack(spacing: 12) {
+                        Button(action: createNewProject) {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Create New Project")
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(14)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.blue,
+                                        Color.blue.opacity(0.8)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                        }
+                    }
+                    .padding(16)
                 }
-                .padding(16)
             }
-            .background(Color(.systemBackground))
         }
     }
 
@@ -68,13 +96,18 @@ struct ProjectCard: View {
         project.taskCount > 0 ? Double(project.completedTaskCount) / Double(project.taskCount) : 0
     }
 
+    var budgetPercentageUsed: Double {
+        project.budget > 0 ? min(project.totalTaskCost / project.budget, 1.0) : 0
+    }
+
     var body: some View {
         NavigationLink(destination: TaskListView(project: project)) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 14) {
+                // Title Section
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(project.title)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.primary)
                         if let projectDescription = project.projectDescription {
                             Text(projectDescription)
@@ -85,41 +118,127 @@ struct ProjectCard: View {
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(project.completedTaskCount)/\(project.taskCount)")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-                        Text("tasks")
-                            .font(.system(size: 11, weight: .regular))
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.green)
+                            Text("\(project.completedTaskCount)")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                        }
+                        Text("of \(project.taskCount)")
+                            .font(.system(size: 12, weight: .regular))
                             .foregroundColor(.gray)
                     }
                 }
 
-                // Progress Bar
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color(.systemGray4))
-
-                        Capsule()
-                            .fill(Color.blue)
-                            .frame(width: geometry.size.width * progressPercentage)
+                // Task Progress Section
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Progress")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
+                        Spacer()
+                        Text(String(format: "%.0f%%", progressPercentage * 100))
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.blue)
                     }
-                    .frame(height: 6)
-                }
-                .frame(height: 6)
 
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color(.systemGray4).opacity(0.5))
+
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.blue,
+                                            Color.blue.opacity(0.8)
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geometry.size.width * progressPercentage)
+                        }
+                        .frame(height: 8)
+                    }
+                    .frame(height: 8)
+                }
+
+                // Budget Display (if budget is set)
+                if project.budget > 0 {
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Budget")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.gray)
+                            Spacer()
+                            HStack(spacing: 2) {
+                                Text(String(format: "$%.2f", project.totalTaskCost))
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                Text(String(format: "/ $%.2f", project.budget))
+                                    .font(.system(size: 12, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+
+                        // Budget Usage Bar
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color(.systemGray4).opacity(0.5))
+
+                                Capsule()
+                                    .fill(project.remainingBudget >= 0 ?
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.green,
+                                                Color.green.opacity(0.8)
+                                            ]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        ) :
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.red,
+                                                Color.red.opacity(0.8)
+                                            ]),
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .frame(width: geometry.size.width * budgetPercentageUsed)
+                            }
+                            .frame(height: 6)
+                        }
+                        .frame(height: 6)
+                    }
+                }
+
+                // Footer with Date
                 HStack(spacing: 8) {
                     Image(systemName: "calendar")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.blue)
                     Text(project.createdAt.formatted(date: .abbreviated, time: .omitted))
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(.gray)
+                    Spacer()
                 }
             }
-            .padding(12)
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
+            .padding(14)
+            .background(Color(.systemGray6).opacity(0.5))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.blue.opacity(0.1), lineWidth: 1)
+            )
         }
     }
 }
@@ -130,32 +249,50 @@ struct EmptyStateView: View {
     let appState: AppState
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             Spacer()
 
-            Image(systemName: "inbox.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.gray)
+            VStack(spacing: 16) {
+                Image(systemName: "inbox.fill")
+                    .font(.system(size: 56, weight: .semibold))
+                    .foregroundColor(.blue.opacity(0.6))
 
-            VStack(spacing: 8) {
-                Text("No Projects Yet")
-                    .font(.system(size: 18, weight: .semibold))
-                Text("Create your first project by answering a few questions")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 12) {
+                    Text("No Projects Yet")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text("Create your first project by answering a few questions about what you want to organize")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                }
             }
+            .padding(24)
+            .background(Color(.systemGray6).opacity(0.5))
+            .cornerRadius(16)
 
             Spacer()
 
             Button(action: createNewProject) {
-                Text("Create First Project")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(16)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
+                HStack {
+                    Image(systemName: "sparkles")
+                    Text("Create First Project")
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .frame(maxWidth: .infinity)
+                .padding(14)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue,
+                            Color.blue.opacity(0.8)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .foregroundColor(.white)
+                .cornerRadius(12)
             }
             .padding(16)
 

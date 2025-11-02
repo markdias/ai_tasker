@@ -97,31 +97,100 @@ class OpenAIService {
             [
                 "role": "user",
                 "content": """
-                Based on this prompt and answers, generate a structured list of actionable tasks:
+                Based on this prompt and answers, generate a comprehensive, detailed list of actionable tasks:
 
                 Prompt: "\(prompt)"
 
                 Answers:
                 \(answersText)
 
+                IMPORTANT GUIDELINES:
+                1. Generate 5-8 detailed tasks (more than the minimum)
+                2. Use LIST tasks for anything involving:
+                   - Guest lists, attendee lists, invitee names
+                   - Shopping lists, groceries, supplies, inventory
+                   - Menu items, food/drink selections
+                   - Vendor lists, contact lists
+                   - Subtask checklists, activity lists
+                   - Items to pack, purchase, or collect
+                   - Names, locations, or items to track
+                3. Use appropriate field types:
+                   - "list": When user needs to track multiple items or names
+                   - "text": Single-line descriptions, decisions, notes
+                   - "currency": Budget, cost, price information
+                   - "date": Deadlines, scheduling, timing
+                   - "number": Quantities, counts, measurements
+                   - "checkbox": Binary decisions or confirmations
+                4. For LIST tasks, include detailed fields for each item:
+                   - For guest lists: Include fields like "Name", "Email", "Phone", "Dietary Restrictions"
+                   - For shopping: Include fields like "Item", "Quantity", "Price", "Category"
+                   - For menus: Include fields like "Dish Name", "Type", "Servings", "Cost"
+                5. Make descriptions specific and outcome-focused
+                6. Break complex tasks into logical subtasks
+
                 Return ONLY valid JSON in this format (no markdown, no extra text):
                 {
                   "projectTitle": "Project Name",
-                  "projectDescription": "Brief description",
+                  "projectDescription": "2-3 sentence description of the project scope",
                   "tasks": [
                     {
-                      "title": "Task 1",
-                      "description": "What needs to be done",
-                      "type": "list",
+                      "title": "Task Title",
+                      "description": "Detailed description of what to accomplish and why",
+                      "type": "list|text|currency|date|number|checkbox",
                       "inputFields": [
-                        {"name": "field1", "label": "Field Label", "type": "text", "required": true}
+                        {"name": "field_name", "label": "Display Label", "type": "text|number|currency|date", "required": true}
                       ]
                     }
                   ]
                 }
 
-                Types can be: list, text, number, currency, date, checkbox
-                Generate 3-5 tasks. Make them specific and actionable.
+                EXAMPLE for party planning:
+                {
+                  "projectTitle": "Birthday Party Planning",
+                  "projectDescription": "Plan and execute a birthday party with catering, decorations, and invitations",
+                  "tasks": [
+                    {
+                      "title": "Create Guest List",
+                      "description": "Build comprehensive guest list with contact information for follow-up and coordination",
+                      "type": "list",
+                      "inputFields": [
+                        {"name": "guest_name", "label": "Guest Name", "type": "text", "required": true},
+                        {"name": "email", "label": "Email", "type": "text", "required": false},
+                        {"name": "phone", "label": "Phone", "type": "text", "required": false},
+                        {"name": "dietary_restrictions", "label": "Dietary Restrictions", "type": "text", "required": false}
+                      ]
+                    },
+                    {
+                      "title": "Plan Menu",
+                      "description": "Select menu items and quantities based on guest count and preferences",
+                      "type": "list",
+                      "inputFields": [
+                        {"name": "dish_name", "label": "Dish Name", "type": "text", "required": true},
+                        {"name": "type", "label": "Type (Appetizer/Main/Dessert)", "type": "text", "required": true},
+                        {"name": "servings", "label": "Servings Needed", "type": "number", "required": true},
+                        {"name": "cost_per_serving", "label": "Cost Per Serving", "type": "currency", "required": true}
+                      ]
+                    },
+                    {
+                      "title": "Set Party Budget",
+                      "description": "Determine total budget allocation across catering, decorations, and entertainment",
+                      "type": "currency",
+                      "inputFields": []
+                    },
+                    {
+                      "title": "Decoration Shopping List",
+                      "description": "List all decorations needed to create party atmosphere",
+                      "type": "list",
+                      "inputFields": [
+                        {"name": "item", "label": "Decoration Item", "type": "text", "required": true},
+                        {"name": "quantity", "label": "Quantity", "type": "number", "required": true},
+                        {"name": "estimated_cost", "label": "Estimated Cost", "type": "currency", "required": false}
+                      ]
+                    }
+                  ]
+                }
+
+                Now generate tasks for the user's prompt. Make them detailed and comprehensive.
                 """
             ]
         ]
@@ -133,7 +202,7 @@ class OpenAIService {
                 "model": model,
                 "messages": messages,
                 "temperature": 0.7,
-                "max_tokens": 2000,
+                "max_tokens": 3500,
             ]
         ) { [weak self] data, error in
             if let error = error {
