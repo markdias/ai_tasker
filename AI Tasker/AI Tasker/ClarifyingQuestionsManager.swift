@@ -37,10 +37,10 @@ class ClarifyingQuestionsManager {
     ) {
         let systemPrompt = """
         You are a helpful project planning assistant. Your job is to ask clarifying questions
-        to help users better define their project scope. Generate 3-4 specific, practical questions
+        to help users better define their project scope. Generate EXACTLY 5 specific, practical questions
         that will help you understand the project better.
 
-        Return a JSON array with this format:
+        Return a JSON array with exactly 5 questions in this format:
         [
             {
                 "question": "What is the date of the party?",
@@ -56,6 +56,16 @@ class ClarifyingQuestionsManager {
                 "question": "What type of party is it?",
                 "type": "multipleChoice",
                 "options": ["Birthday", "Wedding", "Corporate", "Casual Gathering", "Other"]
+            },
+            {
+                "question": "What is your budget?",
+                "type": "freeText",
+                "options": null
+            },
+            {
+                "question": "What are the main activities or focus?",
+                "type": "freeText",
+                "options": null
             }
         ]
 
@@ -140,16 +150,30 @@ class ClarifyingQuestionsManager {
         completion: @escaping (Result<[GeneratedTask], ClarifyingQuestionsError>) -> Void
     ) {
         let systemPrompt = """
-        You are a project planning expert. Create a detailed task list based on the goal and
-        the answers provided. Return a JSON array of tasks with this format:
-        [
-            {
-                "title": "Task title",
-                "description": "Brief description",
-                "estimatedTime": 30,
-                "priority": "high"
-            }
-        ]
+        You are an expert project planning assistant. Create a detailed, comprehensive task list
+        based on the user's goal and answers to clarifying questions. Generate 15-30 specific,
+        actionable tasks that cover all aspects needed to accomplish the goal.
+
+        Return a JSON array of tasks with this exact format:
+        {
+            "tasks": [
+                {
+                    "title": "Task title",
+                    "description": "Brief description",
+                    "estimatedTime": 30,
+                    "priority": "high"
+                },
+                ...
+            ]
+        }
+
+        Guidelines:
+        - Each task should be specific and actionable
+        - Distribute priorities: some high, some medium, some low
+        - Estimated time should be in minutes (15-120 range)
+        - Group related tasks logically
+        - Include planning, preparation, execution, and follow-up tasks
+        - Priorities: high, medium, low
         """
 
         let answersText = answers
@@ -159,10 +183,11 @@ class ClarifyingQuestionsManager {
         let userPrompt = """
         Goal: \(goal)
 
-        Additional Details:
+        User's Answers to Clarifying Questions:
         \(answersText)
 
-        Please create a comprehensive task list to accomplish this goal.
+        Please create a comprehensive, detailed task list with 15-30 tasks to accomplish this goal.
+        Take into account all the user's answers and create specific tasks based on those details.
         """
 
         let requestBody: [String: Any] = [
@@ -233,20 +258,55 @@ class ClarifyingQuestionsManager {
     // MARK: - Parse Questions
     private func parseQuestions(from jsonString: String) throws -> [ClarifyingQuestion] {
         guard let data = jsonString.data(using: .utf8) else {
-            throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1))
+            throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid UTF-8 payload"
+            ]))
         }
 
-        if let array = try? JSONDecoder().decode([QuestionDTO].self, from: data) {
-            return array.map { dto in
-                ClarifyingQuestion(
-                    question: dto.question,
-                    type: ClarifyingQuestion.QuestionType(rawValue: dto.type) ?? .freeText,
-                    options: dto.options
-                )
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        if let array = try? decoder.decode([QuestionDTO].self, from: data), !array.isEmpty {
+            return array.map(mapQuestionDTO)
+        }
+
+        if let container = try? decoder.decode(ClarifyingQuestionContainer.self, from: data),
+           let questions = container.questionsList, !questions.isEmpty {
+            return questions.map(mapQuestionDTO)
+        }
+
+        guard let jsonObject = try? JSONSerialization.jsonObject(with: data) else {
+            throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Failed to parse ClarifyingQuestions JSON"
+            ]))
+        }
+
+        if let array = jsonObject as? [[String: Any]] {
+            let questions = mapQuestionDictionaries(array)
+            if !questions.isEmpty { return questions }
+        } else if let dictionary = jsonObject as? [String: Any] {
+            if let single = buildQuestion(from: dictionary) {
+                return [single]
+            }
+
+            let nestedArrays = dictionary.values.compactMap { $0 as? [[String: Any]] }
+            for array in nestedArrays {
+                let questions = mapQuestionDictionaries(array)
+                if !questions.isEmpty { return questions }
             }
         }
 
-        throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1))
+        throw ClarifyingQuestionsError.decodingFailed(NSError(domain: "JSON", code: -1, userInfo: [
+            NSLocalizedDescriptionKey: "Unexpected clarifying question JSON format: \(jsonString)"
+        ]))
+    }
+
+    private func mapQuestionDTO(_ dto: QuestionDTO) -> ClarifyingQuestion {
+        ClarifyingQuestion(
+            question: dto.question.trimmingCharacters(in: .whitespacesAndNewlines),
+            type: ClarifyingQuestion.QuestionType(rawValue: dto.type) ?? .freeText,
+            options: normalizeOptions(dto.options)
+        )
     }
 
 }
@@ -256,6 +316,17 @@ private struct QuestionDTO: Decodable {
     let question: String
     let type: String
     let options: [String]?
+}
+
+private struct ClarifyingQuestionContainer: Decodable {
+    let questions: [QuestionDTO]?
+    let items: [QuestionDTO]?
+    let prompts: [QuestionDTO]?
+    let data: [QuestionDTO]?
+
+    var questionsList: [QuestionDTO]? {
+        questions ?? items ?? prompts ?? data
+    }
 }
 
 private struct ChatCompletionResponse: Decodable {
@@ -283,6 +354,41 @@ private extension ClarifyingQuestion.QuestionType {
         case "free text": self = .freeText
         default: return nil
         }
+    }
+}
+
+private extension ClarifyingQuestionsManager {
+    func mapQuestionDictionaries(_ array: [[String: Any]]) -> [ClarifyingQuestion] {
+        array.compactMap(buildQuestion)
+    }
+
+    func buildQuestion(from dictionary: [String: Any]) -> ClarifyingQuestion? {
+        guard let rawQuestion = dictionary["question"] as? String else { return nil }
+        let question = rawQuestion.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !question.isEmpty else { return nil }
+
+        let rawType = (dictionary["type"] as? String)
+            ?? (dictionary["questionType"] as? String)
+            ?? "freeText"
+
+        let options = (dictionary["options"] as? [String])
+            ?? (dictionary["choices"] as? [String])
+
+        return ClarifyingQuestion(
+            question: question,
+            type: ClarifyingQuestion.QuestionType(rawValue: rawType) ?? .freeText,
+            options: normalizeOptions(options)
+        )
+    }
+}
+
+private extension ClarifyingQuestionsManager {
+    func normalizeOptions(_ options: [String]?) -> [String]? {
+        guard let options = options else { return nil }
+        let cleaned = options
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return cleaned.isEmpty ? nil : cleaned
     }
 }
 

@@ -90,7 +90,7 @@ struct ProjectsView: View {
             if !activeProjects.isEmpty {
                 Section(header: Text("Active Projects")) {
                     ForEach(activeProjects) { project in
-                        ProjectRow(project: project)
+                        ProjectRow(project: project, isArchived: false)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 selectedProject = project
@@ -145,8 +145,8 @@ struct ProjectRow: View {
     let isArchived: Bool
 
     var completionPercentage: Double {
-        guard let tasks = project.tasks, !tasks.isEmpty else { return 0 }
-        let completedCount = tasks.filter { ($0 as? Task)?.isCompleted == true }.count
+        guard let tasks = project.tasks, tasks.count > 0 else { return 0 }
+        let completedCount = tasks.filter { ($0 as? Task)?.isCompletedFlag == true }.count
         return Double(completedCount) / Double(tasks.count) * 100
     }
 
@@ -155,7 +155,7 @@ struct ProjectRow: View {
     }
 
     var completedCount: Int {
-        project.tasks?.filter { ($0 as? Task)?.isCompleted == true }.count ?? 0
+        project.tasks?.filter { ($0 as? Task)?.isCompletedFlag == true }.count ?? 0
     }
 
     var body: some View {
@@ -362,7 +362,7 @@ struct TaskListRow: View {
             .buttonStyle(PlainButtonStyle())
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(task.title ?? "")
+                Text(task.title)
                     .font(.body)
                     .strikethrough(task.isCompletedFlag, color: .gray)
                     .foregroundColor(task.isCompletedFlag ? .gray : .primary)
@@ -395,7 +395,7 @@ struct TaskListRow: View {
 
     private func toggleCompletion() {
         withAnimation {
-            task.isCompletedValue.toggle()
+            task.isCompletedFlag.toggle()
             task.updatedAtValue = Date()
 
             do {
