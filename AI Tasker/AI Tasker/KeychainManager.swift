@@ -14,7 +14,7 @@ class KeychainManager {
     private let serviceIdentifier = "com.markdias.aitasker"
 
     // MARK: - Save API Key
-    func saveAPIKey(_ apiKey: String) throws {
+    func saveAPIKey(_ apiKey: String) {
         let data = apiKey.data(using: .utf8)!
 
         let query: [String: Any] = [
@@ -30,13 +30,13 @@ class KeychainManager {
         // Add new key
         let status = SecItemAdd(query as CFDictionary, nil)
 
-        guard status == errSecSuccess else {
-            throw KeychainError.saveFailed(status: status)
+        if status != errSecSuccess {
+            print("Failed to save API key to Keychain: \(status)")
         }
     }
 
     // MARK: - Retrieve API Key
-    func getAPIKey() throws -> String? {
+    func retrieveAPIKey() -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceIdentifier,
@@ -47,24 +47,26 @@ class KeychainManager {
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
 
-        guard status != errSecItemNotFound else {
+        if status == errSecItemNotFound {
             return nil
         }
 
-        guard status == errSecSuccess else {
-            throw KeychainError.retrieveFailed(status: status)
+        if status != errSecSuccess {
+            print("Failed to retrieve API key from Keychain: \(status)")
+            return nil
         }
 
         guard let data = result as? Data,
               let apiKey = String(data: data, encoding: .utf8) else {
-            throw KeychainError.decodeFailed
+            print("Failed to decode API key from Keychain")
+            return nil
         }
 
         return apiKey
     }
 
     // MARK: - Delete API Key
-    func deleteAPIKey() throws {
+    func deleteAPIKey() {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: serviceIdentifier,
@@ -73,18 +75,14 @@ class KeychainManager {
 
         let status = SecItemDelete(query as CFDictionary)
 
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw KeychainError.deleteFailed(status: status)
+        if status != errSecSuccess && status != errSecItemNotFound {
+            print("Failed to delete API key from Keychain: \(status)")
         }
     }
 
     // MARK: - Check if API Key exists
     func hasAPIKey() -> Bool {
-        do {
-            return try getAPIKey() != nil
-        } catch {
-            return false
-        }
+        return retrieveAPIKey() != nil
     }
 }
 

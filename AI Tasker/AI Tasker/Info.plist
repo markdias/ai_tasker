@@ -6,5 +6,9 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Promptodo needs access to your microphone to record voice prompts.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Promptodo uses speech recognition to transcribe your voice input.</string>
 </dict>
 </plist>

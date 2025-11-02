@@ -1,36 +1,40 @@
 //
-//  AI_TaskerApp.swift
-//  AI Tasker
+//  PromptodoApp.swift
+//  Promptodo
 //
 //  Created by Mark Dias on 01/11/2025.
+//  Updated to use SwiftUI + SwiftData on 02/11/2025.
 //
 
 import SwiftUI
-import CoreData
+import SwiftData
 
 @main
-struct AI_TaskerApp: App {
-    let persistenceController = PersistenceController.shared
-    @StateObject private var appSettings = AppSettings.shared
+struct PromptodoApp: App {
+    let modelContainer: ModelContainer
+
+    @State private var appState = AppState()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject(appSettings)
-                .onAppear {
-                    requestNotificationPermission()
-                }
+            RootView(appState: appState)
+                .modelContainer(modelContainer)
         }
     }
 
-    private func requestNotificationPermission() {
-        NotificationManager.shared.requestNotificationPermission { granted in
-            if granted {
-                DispatchQueue.main.async {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            }
+    init() {
+        let schema = Schema([
+            ProjectLocal.self,
+            TaskLocal.self,
+            PromptLocal.self,
+        ])
+
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+        do {
+            modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not initialize ModelContainer: \(error)")
         }
     }
 }
