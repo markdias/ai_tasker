@@ -6,6 +6,8 @@ struct OnboardingView: View {
     @State private var apiKeyProvided: Bool = false
     @State private var apiKeyInput: String = ""
     @State private var showAPIKeyInput: Bool = false
+    @State private var apiKeySaved: Bool = false
+    @State private var apiSaveMessage: String = ""
 
     var body: some View {
         ZStack {
@@ -215,50 +217,86 @@ struct OnboardingView: View {
             } else {
                 // API Key Input Form
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Enter your OpenAI API Key")
-                        .font(.system(size: 14, weight: .semibold))
+                    if apiKeySaved {
+                        // Success confirmation
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.green)
 
-                    SecureField("sk-...", text: $apiKeyInput)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("API Key Saved")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("Your OpenAI API key is ready to use")
+                                    .font(.system(size: 12, weight: .regular))
+                                    .foregroundColor(.gray)
+                            }
+
+                            Spacer()
+                        }
                         .padding(12)
-                        .background(Color(.systemBackground))
+                        .background(Color.green.opacity(0.1))
                         .cornerRadius(8)
-                        .font(.system(size: 14))
 
-                    Text("Your API key is stored securely in your device's keychain and never sent to external servers.")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(.gray)
-
-                    HStack(spacing: 12) {
                         Button(action: {
                             showAPIKeyInput = false
+                            apiKeySaved = false
                             apiKeyInput = ""
                         }) {
-                            Text("Cancel")
+                            Text("Continue")
                                 .font(.system(size: 14, weight: .semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(12)
-                                .background(Color(.systemGray4))
-                                .foregroundColor(.primary)
-                                .cornerRadius(8)
-                        }
-
-                        Button(action: {
-                            if !apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty {
-                                // Save API key to keychain
-                                KeychainManager.shared.saveAPIKey(apiKeyInput)
-                                apiKeyProvided = true
-                                showAPIKeyInput = false
-                            }
-                        }) {
-                            Text("Save & Continue")
-                                .font(.system(size: 14, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .padding(12)
-                                .background(apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.blue)
+                                .background(Color.blue)
                                 .foregroundColor(.white)
                                 .cornerRadius(8)
                         }
-                        .disabled(apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                    } else {
+                        Text("Enter your OpenAI API Key")
+                            .font(.system(size: 14, weight: .semibold))
+
+                        SecureField("sk-...", text: $apiKeyInput)
+                            .padding(12)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(8)
+                            .font(.system(size: 14))
+
+                        Text("Your API key is stored securely in your device's keychain and never sent to external servers.")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundColor(.gray)
+
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                showAPIKeyInput = false
+                                apiKeyInput = ""
+                            }) {
+                                Text("Cancel")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(12)
+                                    .background(Color(.systemGray4))
+                                    .foregroundColor(.primary)
+                                    .cornerRadius(8)
+                            }
+
+                            Button(action: {
+                                if !apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    // Save API key to keychain
+                                    KeychainManager.shared.saveAPIKey(apiKeyInput)
+                                    apiKeyProvided = true
+                                    apiKeySaved = true
+                                }
+                            }) {
+                                Text("Save & Continue")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(12)
+                                    .background(apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
+                            .disabled(apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
                     }
                 }
                 .padding(16)
@@ -391,6 +429,8 @@ struct OnboardingView: View {
 
     private func nextStep() {
         if currentStep == 3 {
+            // Mark onboarding as complete before dismissing
+            // This will be handled by RootView's onDisappear
             dismiss()
         } else {
             withAnimation {

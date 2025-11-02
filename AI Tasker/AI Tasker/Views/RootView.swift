@@ -8,13 +8,7 @@ struct RootView: View {
             Group {
                 switch appState.currentFlow {
                 case .onboarding:
-                    OnboardingView()
-                        .environment(appState)
-                        .onDisappear {
-                            // Mark onboarding as complete when dismissed
-                            appState.hasCompletedOnboarding = true
-                            appState.currentFlow = .home
-                        }
+                    OnboardingViewWrapper(appState: appState)
                 case .home:
                     HomeView(appState: appState)
                 case .questionForm:
@@ -34,6 +28,22 @@ struct RootView: View {
             }
         }
         .environment(appState)
+    }
+}
+
+// Wrapper to handle onboarding completion
+struct OnboardingViewWrapper: View {
+    @Environment(\.dismiss) var dismiss
+    var appState: AppState
+
+    var body: some View {
+        OnboardingView()
+            .environment(appState)
+            .onDisappear {
+                // Mark onboarding as complete when dismissed
+                appState.hasCompletedOnboarding = true
+                appState.currentFlow = .home
+            }
     }
 }
 
