@@ -394,6 +394,18 @@ struct ProjectCreationView: View {
                 newTask.createdAt = Date()
                 newTask.updatedAt = Date()
                 newTask.project = newProject
+
+                // Create dynamic fields for this task
+                if let fields = task.fields {
+                    for (index, field) in fields.enumerated() {
+                        let newField = TaskField(context: viewContext)
+                        newField.fieldName = field.fieldName
+                        newField.fieldType = field.fieldType
+                        newField.fieldOrder = field.fieldOrder ?? Int16(index)
+                        newField.createdAt = Date()
+                        newField.task = newTask
+                    }
+                }
             }
 
             do {

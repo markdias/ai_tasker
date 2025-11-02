@@ -22,9 +22,19 @@
         <attribute name="scheduledTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="sessionId" optional="YES" attributeType="String"/>
         <relationship name="project" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="tasks" inverseEntity="Project"/>
+        <relationship name="fields" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TaskField" inverseName="task" inverseEntity="TaskField"/>
+    </entity>
+    <entity name="TaskField" representedClassName="TaskField" syncable="YES" codeGenerationType="none">
+        <attribute name="fieldName" optional="NO" attributeType="String"/>
+        <attribute name="fieldType" optional="NO" attributeType="String" defaultValue="text"/>
+        <attribute name="fieldValue" optional="YES" attributeType="String"/>
+        <attribute name="fieldOrder" optional="YES" attributeType="Integer 16" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="task" optional="NO" maxCount="1" deletionRule="Cascade" destinationEntity="Task" inverseName="fields" inverseEntity="Task"/>
     </entity>
     <elements>
         <element name="Project" positionX="-63" positionY="-234" width="128" height="163"/>
         <element name="Task" positionX="-63" positionY="-18" width="128" height="207"/>
+        <element name="TaskField" positionX="0" positionY="0" width="128" height="118"/>
     </elements>
 </model>

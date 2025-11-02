@@ -160,21 +160,45 @@ class ClarifyingQuestionsManager {
         based on the user's goal and answers to clarifying questions. Generate 15-30 specific,
         actionable tasks that cover all aspects needed to accomplish the goal.
 
+        For each task, determine relevant fields that the user should fill in. For example:
+        - "Book Accommodation" task should have fields: hotel_name, check_in_date, check_out_date, room_type, confirmation_number
+        - "Create Guest List" task should have fields: guest_name, contact_info, dietary_restrictions
+        - "Order Catering" task should have fields: caterer_name, menu_items, headcount, delivery_time
+
         Return a JSON array of tasks with this exact format:
         {
             "tasks": [
                 {
-                    "title": "Task title",
-                    "description": "Brief description",
-                    "estimatedTime": 30,
-                    "priority": "high"
+                    "title": "Book Accommodation",
+                    "description": "Find and book hotel for the event",
+                    "estimatedTime": 60,
+                    "priority": "high",
+                    "fields": [
+                        {"fieldName": "Hotel Name", "fieldType": "text", "fieldOrder": 1},
+                        {"fieldName": "Check-in Date", "fieldType": "date", "fieldOrder": 2},
+                        {"fieldName": "Room Type", "fieldType": "text", "fieldOrder": 3},
+                        {"fieldName": "Confirmation Number", "fieldType": "text", "fieldOrder": 4}
+                    ]
                 },
-                ...
+                {
+                    "title": "Create Guest List",
+                    "description": "Compile list of guests to invite",
+                    "estimatedTime": 45,
+                    "priority": "high",
+                    "fields": [
+                        {"fieldName": "Guest Name", "fieldType": "text", "fieldOrder": 1},
+                        {"fieldName": "Contact", "fieldType": "text", "fieldOrder": 2},
+                        {"fieldName": "Dietary Restrictions", "fieldType": "text", "fieldOrder": 3}
+                    ]
+                }
             ]
         }
 
+        Field Types: text, number, date, toggle, list
         Guidelines:
         - Each task should be specific and actionable
+        - Include relevant fields for tasks that need detailed information
+        - Simple tasks can have empty or minimal fields
         - Distribute priorities: some high, some medium, some low
         - Estimated time should be in minutes (15-120 range)
         - Group related tasks logically

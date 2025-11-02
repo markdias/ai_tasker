@@ -84,6 +84,10 @@ struct TaskDetailView: View {
                     }
                 }
 
+                Section(header: Text("Task Details")) {
+                    TaskFieldsInputView(task: task)
+                }
+
                 Section {
                     Button(action: saveChanges) {
                         Text("Save Changes")

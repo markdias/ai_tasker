@@ -244,6 +244,13 @@ struct GeneratedTask: Codable {
     let description: String?
     let estimatedTime: Int16
     let priority: String
+    let fields: [GeneratedTaskField]?
+}
+
+struct GeneratedTaskField: Codable {
+    let fieldName: String
+    let fieldType: String
+    let fieldOrder: Int16?
 }
 
 private struct GeneratedTaskContainer: Decodable {
