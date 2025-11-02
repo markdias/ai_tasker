@@ -15,14 +15,14 @@ struct StatsView: View {
     private var allTasks: FetchedResults<Task>
 
     var completedTasks: [Task] {
-        allTasks.filter { $0.isCompleted }
+        allTasks.filter { $0.isCompletedFlag }
     }
 
     var completedToday: Int {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         return completedTasks.filter { task in
-            guard let createdAt = task.updatedAt ?? task.createdAt else { return false }
+            let createdAt = task.updatedAt ?? task.createdAtValue
             return calendar.startOfDay(for: createdAt) == today
         }.count
     }

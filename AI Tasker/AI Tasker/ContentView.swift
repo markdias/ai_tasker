@@ -77,12 +77,20 @@ struct ContentView: View {
             }
             .tag(0)
 
+            // Projects Tab
+            ProjectsView()
+                .environment(\.managedObjectContext, viewContext)
+                .tabItem {
+                    Label("Projects", systemImage: "folder")
+                }
+                .tag(1)
+
             // Stats Tab
             StatsView()
                 .tabItem {
                     Label("Stats", systemImage: "chart.bar")
                 }
-                .tag(1)
+                .tag(2)
         }
         .sheet(isPresented: $showingGoalInput) {
             GoalInputView()

@@ -101,8 +101,8 @@ struct TaskDetailView: View {
             .navigationTitle("Edit Task")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                editTitle = task.title ?? ""
-                editDescription = task.description ?? ""
+                editTitle = task.title
+                editDescription = task.taskDescription ?? ""
                 editEstimatedTime = task.estimatedTime
                 editPriority = task.priority ?? "medium"
                 editCategory = task.category ?? ""
@@ -121,24 +121,23 @@ struct TaskDetailView: View {
     private func saveChanges() {
         withAnimation {
             task.title = editTitle.isEmpty ? "Untitled" : editTitle
-            task.description = editDescription
+            task.taskDescription = editDescription.isEmpty ? nil : editDescription
             task.estimatedTime = editEstimatedTime
             task.priority = editPriority
             task.category = editCategory
             task.scheduledTime = editScheduledTime
-            task.updatedAt = Date()
+            task.updatedAtValue = Date()
 
             do {
                 try viewContext.save()
 
                 // Handle notification scheduling
-                if let scheduledTime = editScheduledTime {
+                if editScheduledTime != nil {
                     NotificationManager.shared.scheduleTaskReminder(task: task)
                 } else {
                     // Cancel reminder if scheduled time was removed
-                    if let taskId = task.objectID.uriRepresentation().lastPathComponent {
-                        NotificationManager.shared.cancelTaskReminder(taskId: taskId)
-                    }
+                    let taskId = task.objectID.uriRepresentation().lastPathComponent
+                    NotificationManager.shared.cancelTaskReminder(taskId: taskId)
                 }
 
                 alertMessage = "Task updated successfully"

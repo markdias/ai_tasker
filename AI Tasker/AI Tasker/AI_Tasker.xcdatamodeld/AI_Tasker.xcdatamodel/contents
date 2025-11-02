@@ -1,18 +1,30 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1" systemVersion="11A491" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="true" userDefinedModelVersionIdentifier="">
-    <entity name="Task" representedClassName="Task" syncable="YES" codeGenerationType="class">
-        <attribute name="title" optional="NO" attributeType="String"/>
-        <attribute name="description" optional="YES" attributeType="String"/>
+    <entity name="Project" representedClassName="Project" syncable="YES" codeGenerationType="none">
+        <attribute name="title" optional="NO" attributeType="String" defaultValueString="New Project"/>
+        <attribute name="projectDescription" optional="YES" attributeType="String"/>
+        <attribute name="color" optional="YES" attributeType="String" defaultValue="blue"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" defaultDate="2000-01-01 00:00:00 +0000"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isArchived" optional="YES" attributeType="Boolean" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="tasks" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Task" inverseName="project" inverseEntity="Task"/>
+    </entity>
+    <entity name="Task" representedClassName="Task" syncable="YES" codeGenerationType="none">
+        <attribute name="title" optional="NO" attributeType="String" defaultValueString="Untitled Task"/>
+        <attribute name="taskDescription" optional="YES" attributeType="String"/>
         <attribute name="estimatedTime" optional="YES" attributeType="Integer 16" defaultValue="0" usesScalarValueType="YES"/>
         <attribute name="priority" optional="YES" attributeType="String" defaultValue="medium"/>
-        <attribute name="isCompleted" optional="NO" attributeType="Boolean" defaultValue="NO" usesScalarValueType="YES"/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" defaultValue="0" usesScalarValueType="YES"/>
         <attribute name="category" optional="YES" attributeType="String"/>
-        <attribute name="createdAt" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO" defaultDate="2000-01-01 00:00:00 +0000"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="scheduledTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="sessionId" optional="YES" attributeType="String"/>
+        <relationship name="project" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="tasks" inverseEntity="Project"/>
     </entity>
     <elements>
-        <element name="Task" positionX="-63" positionY="-18" width="128" height="176"/>
+        <element name="Project" positionX="-63" positionY="-234" width="128" height="163"/>
+        <element name="Task" positionX="-63" positionY="-18" width="128" height="207"/>
     </elements>
 </model>

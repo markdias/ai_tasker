@@ -6,8 +6,10 @@
 //
 
 import Foundation
+import Combine
 
-class AppSettings: ObservableObject {
+@MainActor
+final class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
     private let keychainManager = KeychainManager.shared
@@ -41,9 +43,7 @@ class AppSettings: ObservableObject {
     // MARK: - API Key Management
     func saveAPIKey(_ apiKey: String) throws {
         try keychainManager.saveAPIKey(apiKey)
-        DispatchQueue.main.async {
-            self.hasAPIKey = true
-        }
+        hasAPIKey = true
     }
 
     func getAPIKey() throws -> String? {
@@ -52,8 +52,6 @@ class AppSettings: ObservableObject {
 
     func deleteAPIKey() throws {
         try keychainManager.deleteAPIKey()
-        DispatchQueue.main.async {
-            self.hasAPIKey = false
-        }
+        hasAPIKey = false
     }
 }

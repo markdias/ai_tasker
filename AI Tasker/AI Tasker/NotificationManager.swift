@@ -6,6 +6,8 @@
 //
 
 import UserNotifications
+import CoreData
+import UIKit
 
 class NotificationManager {
     static let shared = NotificationManager()
@@ -28,19 +30,19 @@ class NotificationManager {
 
     // MARK: - Schedule Task Reminder
     func scheduleTaskReminder(task: Task) {
-        guard let taskId = task.objectID.uriRepresentation().lastPathComponent else { return }
+        let taskId = task.objectID.uriRepresentation().lastPathComponent
         guard let scheduledTime = task.scheduledTime else { return }
 
         let content = UNMutableNotificationContent()
         content.title = "Task Reminder"
-        content.body = task.title ?? "Unnamed Task"
+        content.body = task.title
         content.sound = .default
         content.badge = NSNumber(value: UIApplication.shared.applicationIconBadgeNumber + 1)
 
         // Add custom data
         content.userInfo = [
             "taskId": taskId,
-            "taskTitle": task.title ?? "Task"
+            "taskTitle": task.title
         ]
 
         // Calculate time interval
@@ -53,7 +55,7 @@ class NotificationManager {
             if let error = error {
                 print("Error scheduling notification: \(error.localizedDescription)")
             } else {
-                print("Notification scheduled for task: \(task.title ?? "Unknown")")
+                print("Notification scheduled for task: \(task.title)")
             }
         }
     }

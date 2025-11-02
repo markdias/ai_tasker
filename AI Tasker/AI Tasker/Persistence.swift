@@ -28,13 +28,13 @@ struct PersistenceController {
         for (title, desc, time, category, priority) in sampleTasks {
             let newTask = Task(context: viewContext)
             newTask.title = title
-            newTask.description = desc
+            newTask.taskDescription = desc
             newTask.estimatedTime = Int16(time)
             newTask.priority = priority
             newTask.category = category
-            newTask.isCompleted = false
-            newTask.createdAt = Date()
-            newTask.updatedAt = Date()
+            newTask.isCompletedFlag = false
+            newTask.createdAtValue = Date()
+            newTask.updatedAtValue = Date()
         }
 
         do {

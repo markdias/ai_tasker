@@ -24,6 +24,14 @@ class OpenAIManager {
         taskStyle = style
     }
 
+    func getCurrentModel() -> String {
+        return selectedModel
+    }
+
+    func getCurrentStyle() -> String {
+        return taskStyle
+    }
+
     // MARK: - Generate Tasks
     func generateTasks(
         goal: String,
@@ -131,18 +139,102 @@ class OpenAIManager {
             throw OpenAIError.decodingFailed(NSError(domain: "JSONDecoding", code: -1))
         }
 
-        if let array = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-            return array.compactMap { dict in
-                GeneratedTask(
-                    title: dict["title"] as? String ?? "Untitled",
-                    description: dict["description"] as? String,
-                    estimatedTime: dict["estimatedTime"] as? Int16 ?? 30,
-                    priority: dict["priority"] as? String ?? "medium"
-                )
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        if let directArray = try? decoder.decode([GeneratedTask].self, from: data), !directArray.isEmpty {
+            return directArray
+        }
+
+        if let container = try? decoder.decode(GeneratedTaskContainer.self, from: data),
+           let tasks = container.tasksList, !tasks.isEmpty {
+            return tasks
+        }
+
+        guard let jsonObject = try? JSONSerialization.jsonObject(with: data) else {
+            throw OpenAIError.decodingFailed(NSError(domain: "JSONParsing", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid JSON payload"]))
+        }
+
+        if let array = jsonObject as? [[String: Any]] {
+            let tasks = mapGeneratedTasks(from: array)
+            if !tasks.isEmpty { return tasks }
+        } else if let dictionary = jsonObject as? [String: Any] {
+            if let singleTask = buildTask(from: dictionary) {
+                return [singleTask]
+            }
+            let nestedArrays = dictionary.values.compactMap { $0 as? [[String: Any]] }
+            for array in nestedArrays {
+                let tasks = mapGeneratedTasks(from: array)
+                if !tasks.isEmpty { return tasks }
             }
         }
 
-        throw OpenAIError.decodingFailed(NSError(domain: "JSONParsing", code: -1))
+        throw OpenAIError.decodingFailed(
+            NSError(
+                domain: "JSONParsing",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Unexpected task JSON format: \(jsonString)"]
+            )
+        )
+    }
+
+    private func mapGeneratedTasks(from array: [[String: Any]]) -> [GeneratedTask] {
+        array.compactMap(buildTask)
+    }
+
+    private func parseEstimatedTime(from value: Any?) -> Int16 {
+        switch value {
+        case let intValue as Int:
+            return Int16(clamping: intValue)
+        case let int16Value as Int16:
+            return int16Value
+        case let doubleValue as Double:
+            guard doubleValue.isFinite else { return 30 }
+            let rounded = Int(doubleValue.rounded())
+            return Int16(clamping: rounded)
+        case let number as NSNumber:
+            return Int16(clamping: number.intValue)
+        case let stringValue as String:
+            let trimmed = stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let directInt = Int(trimmed) {
+                return Int16(clamping: directInt)
+            }
+            let digits = trimmed.compactMap { $0.isNumber ? $0 : nil }
+            if let combined = Int(String(digits)) {
+                return Int16(clamping: combined)
+            }
+        default:
+            break
+        }
+        return 30
+    }
+
+    private func buildTask(from dictionary: [String: Any]) -> GeneratedTask? {
+        guard let rawTitle = (dictionary["title"] as? String) ?? (dictionary["name"] as? String) else { return nil }
+        let title = rawTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return nil }
+
+        let description = (dictionary["description"] as? String)
+            ?? (dictionary["details"] as? String)
+            ?? (dictionary["summary"] as? String)
+
+        let priorityRaw = ((dictionary["priority"] as? String)
+            ?? (dictionary["importance"] as? String)
+            ?? "medium").trimmingCharacters(in: .whitespacesAndNewlines)
+        let priority = priorityRaw.isEmpty ? "medium" : priorityRaw.lowercased()
+
+        let timeValue = dictionary["estimatedTime"]
+            ?? dictionary["duration"]
+            ?? dictionary["time"]
+            ?? dictionary["minutes"]
+            ?? dictionary["estimatedMinutes"]
+
+        return GeneratedTask(
+            title: title,
+            description: description,
+            estimatedTime: parseEstimatedTime(from: timeValue),
+            priority: priority
+        )
     }
 }
 
@@ -152,6 +244,30 @@ struct GeneratedTask: Codable {
     let description: String?
     let estimatedTime: Int16
     let priority: String
+}
+
+private struct GeneratedTaskContainer: Decodable {
+    let tasks: [GeneratedTask]?
+    let items: [GeneratedTask]?
+    let data: [GeneratedTask]?
+    let results: [GeneratedTask]?
+    let taskList: [GeneratedTask]?
+
+    var tasksList: [GeneratedTask]? {
+        tasks ?? items ?? data ?? results ?? taskList
+    }
+}
+
+private extension Int16 {
+    init(clamping value: Int) {
+        if value > Int(Int16.max) {
+            self = Int16.max
+        } else if value < Int(Int16.min) {
+            self = Int16.min
+        } else {
+            self = Int16(value)
+        }
+    }
 }
 
 struct ChatGPTResponse: Codable {
