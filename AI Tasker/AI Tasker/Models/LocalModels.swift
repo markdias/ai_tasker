@@ -86,6 +86,10 @@ final class ProjectLocal {
     var budget: Double = 0
     var status: String = "active" // "active", "completed", "archived"
 
+    // M5: Reminders Sync
+    var syncedToReminders: Bool = false
+    var reminderCalendarId: String? // ID of the Promptodo calendar in Reminders
+
     var createdAt: Date
     var updatedAt: Date
 
@@ -134,6 +138,9 @@ final class TaskLocal {
     var dueDate: Date?
     var cost: Double = 0
     var linkedListId: String? // for linking to list tasks for budget tracking
+
+    // M5: Reminders Sync
+    var reminderId: String? // Apple Reminders event identifier
 
     var createdAt: Date
     var updatedAt: Date

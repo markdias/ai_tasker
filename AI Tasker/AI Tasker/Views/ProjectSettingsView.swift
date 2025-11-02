@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import EventKit
 
 struct ProjectSettingsView: View {
     @Environment(\.modelContext) var modelContext
@@ -14,6 +15,8 @@ struct ProjectSettingsView: View {
     @State private var status: String
     @State private var isSaving: Bool = false
     @State private var saveMessage: String?
+    @State private var syncReminders: Bool
+    @State private var syncStatus: String = ""
 
     var body: some View {
         NavigationStack {
@@ -135,6 +138,27 @@ struct ProjectSettingsView: View {
                     }
                 }
 
+                // M5: Reminders Sync
+                Section(header: Text("Apple Reminders")) {
+                    Toggle("Sync to Reminders", isOn: $syncReminders)
+
+                    if project.syncedToReminders {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Synced to Reminders")
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                        }
+                    }
+
+                    if !syncStatus.isEmpty {
+                        Text(syncStatus)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(.gray)
+                    }
+                }
+
                 // Delete Section
                 Section {
                     Button(role: .destructive) {
@@ -184,6 +208,49 @@ struct ProjectSettingsView: View {
         project.status = status
         project.updatedAt = Date()
 
+        // M5: Handle Reminders sync
+        if syncReminders && !project.syncedToReminders {
+            let remindersService = RemindersService.shared
+            if remindersService.checkAuthorizationStatus() == .fullAccess ||
+               remindersService.checkAuthorizationStatus() == .denied {
+                remindersService.setupReminderCalendar()
+                syncStatus = "Syncing to Reminders..."
+
+                remindersService.syncProjectToReminders(project: project) { reminderIds, errors in
+                    if !reminderIds.isEmpty {
+                        project.syncedToReminders = true
+                        for task in project.tasks {
+                            if let reminderId = reminderIds[task.id] {
+                                task.reminderId = reminderId
+                            }
+                        }
+                    }
+
+                    if !errors.isEmpty {
+                        syncStatus = "Sync errors occurred"
+                    } else {
+                        syncStatus = "Successfully synced"
+                    }
+                }
+            } else if remindersService.checkAuthorizationStatus() == .notDetermined {
+                remindersService.requestRemindersAccess { granted, error in
+                    if granted {
+                        remindersService.setupReminderCalendar()
+                        remindersService.syncProjectToReminders(project: project) { reminderIds, errors in
+                            if !reminderIds.isEmpty {
+                                project.syncedToReminders = true
+                                for task in project.tasks {
+                                    if let reminderId = reminderIds[task.id] {
+                                        task.reminderId = reminderId
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         do {
             try modelContext.save()
             saveMessage = "✅ Project saved successfully"
@@ -216,6 +283,7 @@ struct ProjectSettingsView: View {
         _dueDate = State(initialValue: project.dueDate)
         _budget = State(initialValue: project.budget)
         _status = State(initialValue: project.status)
+        _syncReminders = State(initialValue: project.syncedToReminders)
     }
 }
 

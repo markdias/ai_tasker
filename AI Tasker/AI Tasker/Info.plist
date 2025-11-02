@@ -6,5 +6,7 @@
 	<string>Promptodo needs access to your microphone to record voice prompts.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Promptodo uses speech recognition to transcribe your voice input.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Promptodo syncs your tasks to Apple Reminders for notifications and cross-device access.</string>
 </dict>
 </plist>

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftData
+import EventKit
 
 /// Navigation flow states
 enum AppFlow: Equatable {
@@ -214,6 +215,40 @@ class AppState {
         modelContext.insert(project)
         do {
             try modelContext.save()
+
+            // M5: Sync to Apple Reminders if enabled
+            let remindersService = RemindersService.shared
+            if remindersService.checkAuthorizationStatus() == .fullAccess ||
+               remindersService.checkAuthorizationStatus() == .authorized {
+                // Setup calendar if needed
+                remindersService.setupReminderCalendar()
+
+                // Sync project to Reminders
+                remindersService.syncProjectToReminders(project: project) { reminderIds, errors in
+                    // Store reminder IDs in tasks for future sync
+                    if !reminderIds.isEmpty {
+                        project.syncedToReminders = true
+                        // Update task reminder IDs
+                        for task in project.tasks {
+                            if let reminderId = reminderIds[task.id] {
+                                task.reminderId = reminderId
+                            }
+                        }
+                        // Save updated project and tasks
+                        do {
+                            try modelContext.save()
+                        } catch {
+                            print("Error saving reminder IDs: \(error.localizedDescription)")
+                        }
+                    }
+
+                    // Log any sync errors
+                    if !errors.isEmpty {
+                        print("Reminders sync errors: \(errors)")
+                    }
+                }
+            }
+
             resetFlow()
             navigateTo(.projectDashboard)
         } catch {

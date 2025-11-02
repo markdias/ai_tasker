@@ -29,7 +29,7 @@ struct HomeView: View {
 
                     Spacer()
 
-                    NavigationLink(destination: APISettingsView()) {
+                    NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gear")
                             .font(.system(size: 18))
                             .foregroundColor(.blue)
