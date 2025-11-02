@@ -221,7 +221,7 @@ class AppState {
             project.tasks.append(task)
         }
 
-        project.taskCount = project.tasks.count
+        project.refreshTaskCounters()
 
         // Save to SwiftData
         modelContext.insert(project)

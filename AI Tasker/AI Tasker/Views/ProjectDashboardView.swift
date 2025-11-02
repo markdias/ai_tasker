@@ -93,7 +93,7 @@ struct ProjectCard: View {
     let project: ProjectLocal
 
     var progressPercentage: Double {
-        project.taskCount > 0 ? Double(project.completedTaskCount) / Double(project.taskCount) : 0
+        project.computedProgress
     }
 
     var budgetPercentageUsed: Double {
@@ -122,11 +122,11 @@ struct ProjectCard: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 14))
                                 .foregroundColor(.green)
-                            Text("\(project.completedTaskCount)")
+                            Text("\(project.computedCompletedTaskCount)")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.primary)
                         }
-                        Text("of \(project.taskCount)")
+                        Text("of \(project.computedTaskCount)")
                             .font(.system(size: 12, weight: .regular))
                             .foregroundColor(.gray)
                     }

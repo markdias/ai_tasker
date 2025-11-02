@@ -26,10 +26,11 @@ struct InputSchemaDefinition: Codable {
 // MARK: - Task Data Models
 
 /// Data structure for list-type tasks
-struct ListTaskData: Codable {
-    struct ListItem: Codable, Identifiable {
+struct ListTaskData: Codable, Equatable {
+    struct ListItem: Codable, Identifiable, Equatable {
         let id: String
         var values: [String: String] // field name -> value
+        var isCompleted: Bool = false
     }
     var items: [ListItem] = []
 }
@@ -196,4 +197,25 @@ struct GeneratedTaskModel: Identifiable {
     let type: String // "list", "text", "number", "currency", "date"
     let inputFields: [InputFieldDefinition]
     var isAccepted: Bool = true
+}
+
+// MARK: - Project Metrics Helpers
+
+extension ProjectLocal {
+    var computedTaskCount: Int {
+        tasks.count
+    }
+
+    var computedCompletedTaskCount: Int {
+        tasks.filter { $0.status == "completed" }.count
+    }
+
+    var computedProgress: Double {
+        computedTaskCount > 0 ? Double(computedCompletedTaskCount) / Double(computedTaskCount) : 0
+    }
+
+    func refreshTaskCounters() {
+        taskCount = computedTaskCount
+        completedTaskCount = computedCompletedTaskCount
+    }
 }

@@ -112,11 +112,11 @@ struct ProjectSettingsView: View {
                     HStack {
                         Text("Tasks Completed")
                         Spacer()
-                        Text("\(project.completedTaskCount)/\(project.taskCount)")
+                        Text("\(project.computedCompletedTaskCount)/\(project.computedTaskCount)")
                             .fontWeight(.semibold)
                     }
 
-                    if project.taskCount > 0 {
+                    if project.computedTaskCount > 0 {
                         VStack(alignment: .leading, spacing: 8) {
                             GeometryReader { geometry in
                                 ZStack(alignment: .leading) {
@@ -125,13 +125,13 @@ struct ProjectSettingsView: View {
 
                                     Capsule()
                                         .fill(Color.green)
-                                        .frame(width: geometry.size.width * (Double(project.completedTaskCount) / Double(project.taskCount)))
+                                        .frame(width: geometry.size.width * project.computedProgress)
                                 }
                                 .frame(height: 8)
                             }
                             .frame(height: 8)
 
-                            Text("\(Int(Double(project.completedTaskCount) / Double(project.taskCount) * 100))% complete")
+                            Text("\(Int(project.computedProgress * 100))% complete")
                                 .font(.system(size: 12, weight: .regular))
                                 .foregroundColor(.gray)
                         }

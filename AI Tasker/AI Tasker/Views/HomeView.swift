@@ -10,6 +10,13 @@ struct HomeView: View {
 
     let speechRecognizer = SpeechRecognizer.shared
 
+    private let promptSuggestions: [String] = [
+        "Plan a 40th birthday weekend on a $2k budget",
+        "Organize a product launch party for 75 guests",
+        "Create a study sprint for finals week",
+        "Design a housewarming checklist for a new apartment"
+    ]
+
     var isInputValid: Bool {
         !promptText.trimmingCharacters(in: .whitespaces).isEmpty
     }
@@ -58,29 +65,108 @@ struct HomeView: View {
 
                     ScrollView {
                         VStack(spacing: 20) {
-                            // Prompt Input Section with modern styling
-                            VStack(spacing: 14) {
-                                Text("What would you like to create?")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .foregroundColor(.primary)
+                                                        // Prompt Input Section with modern styling
+                            VStack(spacing: 18) {
+                                ZStack(alignment: .topLeading) {
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.blue.opacity(0.18),
+                                                    Color.purple.opacity(0.16)
+                                                ]),
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: "sparkles")
+                                                .font(.system(size: 18, weight: .bold))
+                                                .padding(10)
+                                                .background(Color.white.opacity(0.18))
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("What would you like to create?")
+                                                    .font(.system(size: 18, weight: .semibold))
+                                                Text("Describe your project and we'll map out the plan.")
+                                                    .font(.system(size: 13, weight: .regular))
+                                                    .foregroundColor(.white.opacity(0.85))
+                                            }
+                                        }
+                                        Divider()
+                                            .overlay(Color.white.opacity(0.25))
+                                        Text("Paint a quick picture—include the occasion, who it's for, and any constraints you have in mind.")
+                                            .font(.system(size: 13, weight: .regular))
+                                            .foregroundColor(.white.opacity(0.85))
+                                    }
+                                    .padding(20)
+                                    .foregroundColor(.white)
+                                }
+                                .overlay(
+                                    Image(systemName: "circle.grid.cross.fill")
+                                        .font(.system(size: 42))
+                                        .foregroundColor(.white.opacity(0.15))
+                                        .offset(x: 140, y: -30), alignment: .topTrailing
+                                )
 
-                                // Text Input
-                                TextEditor(text: $promptText)
-                                    .frame(height: 110)
-                                    .padding(12)
-                                    .background(Color(.systemBackground))
-                                    .cornerRadius(10)
-                                    .border(Color.blue.opacity(0.2), width: 1)
-                                    .font(.system(size: 16))
+                                if !promptSuggestions.isEmpty {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Text("Need inspiration? Try one of these")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundColor(.gray)
 
-                                // Voice Recording and Clear Buttons
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            HStack(spacing: 10) {
+                                                ForEach(promptSuggestions, id: \.self) { suggestion in
+                                                    Button(action: {
+                                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                                            promptText = suggestion
+                                                        }
+                                                    }) {
+                                                        HStack(spacing: 6) {
+                                                            Image(systemName: "quote.bubble")
+                                                                .font(.system(size: 12, weight: .semibold))
+                                                            Text(suggestion)
+                                                                .font(.system(size: 12, weight: .semibold))
+                                                        }
+                                                        .padding(.horizontal, 14)
+                                                        .padding(.vertical, 8)
+                                                        .background(Color.blue.opacity(0.12))
+                                                        .foregroundColor(.blue)
+                                                        .clipShape(Capsule())
+                                                    }
+                                                }
+                                            }
+                                            .padding(.horizontal, 2)
+                                        }
+                                    }
+                                }
+
+                                ZStack(alignment: .topLeading) {
+                                    TextEditor(text: $promptText)
+                                        .frame(height: 130)
+                                        .padding(12)
+                                        .background(Color(.systemBackground))
+                                        .cornerRadius(12)
+                                        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+                                        .font(.system(size: 16))
+
+                                    if promptText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        Text("e.g. Plan a 3-day wellness retreat for 12 people with a $4k budget")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.gray.opacity(0.65))
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 18)
+                                    }
+                                }
+
                                 HStack(spacing: 10) {
                                     Button(action: toggleRecording) {
                                         HStack(spacing: 8) {
-                                            Image(systemName: isRecording ? "mic.fill" : "mic")
+                                            Image(systemName: isRecording ? "waveform.circle.fill" : "mic")
                                                 .font(.system(size: 16, weight: .semibold))
-                                            Text(isRecording ? "Recording..." : "Use Voice")
+                                            Text(isRecording ? "Listening..." : "Speak it out loud")
                                                 .font(.system(size: 15, weight: .semibold))
                                         }
                                         .frame(maxWidth: .infinity)
@@ -88,24 +174,18 @@ struct HomeView: View {
                                         .background(
                                             isRecording ?
                                             LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.red,
-                                                    Color.red.opacity(0.8)
-                                                ]),
+                                                gradient: Gradient(colors: [Color.red, Color.orange.opacity(0.9)]),
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing
                                             ) :
                                             LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.blue,
-                                                    Color.blue.opacity(0.8)
-                                                ]),
+                                                gradient: Gradient(colors: [Color.blue, Color.purple.opacity(0.85)]),
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing
                                             )
                                         )
                                         .foregroundColor(.white)
-                                        .cornerRadius(10)
+                                        .cornerRadius(12)
                                     }
                                     .disabled(!speechRecognizer.isAvailable)
 
@@ -113,15 +193,15 @@ struct HomeView: View {
                                         Image(systemName: "xmark.circle.fill")
                                             .font(.system(size: 18, weight: .semibold))
                                             .foregroundColor(.gray.opacity(0.6))
-                                            .frame(width: 44, height: 44)
-                                            .background(Color(.systemGray6).opacity(0.5))
-                                            .cornerRadius(10)
+                                            .frame(width: 48, height: 48)
+                                            .background(Color(.systemGray6).opacity(0.6))
+                                            .cornerRadius(12)
                                     }
                                 }
 
                                 if let error = recordingError {
                                     HStack(spacing: 8) {
-                                        Image(systemName: "exclamationmark.circle.fill")
+                                        Image(systemName: "exclamationmark.triangle.fill")
                                             .foregroundColor(.red)
                                         Text(error)
                                             .font(.system(size: 12, weight: .regular))
@@ -129,12 +209,14 @@ struct HomeView: View {
                                     }
                                     .padding(10)
                                     .background(Color.red.opacity(0.1))
-                                    .cornerRadius(8)
+                                    .cornerRadius(10)
                                 }
                             }
-                            .padding(16)
-                            .background(Color(.systemGray6).opacity(0.5))
-                            .cornerRadius(14)
+                            .padding(18)
+                            .background(Color(.systemBackground))
+                            .cornerRadius(18)
+                            .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
+
 
                             // AI Mode Toggle with modern styling
                             HStack(spacing: 12) {

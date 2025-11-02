@@ -11,6 +11,8 @@ struct TaskDetailsView: View {
     @State private var taskCategory: String = ""
     @State private var inputValues: [String: String] = [:]
     @State private var inputSchema: InputSchemaDefinition?
+    @State private var listTaskData: ListTaskData = ListTaskData()
+    @State private var isListTask: Bool = false
     @State private var isSaving: Bool = false
     @State private var saveMessage: String?
 
@@ -244,13 +246,27 @@ struct TaskDetailsView: View {
                         .cornerRadius(12)
 
                         // Dynamic Input Fields
-                        if let schema = inputSchema, let itemSchema = schema.itemSchema {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Task Details")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.gray)
+                        if let schema = inputSchema {
+                            if schema.fieldType == "list", let itemSchema = schema.itemSchema {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Task Items")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
 
-                                ScrollView {
+                                    ListTaskTableEditor(
+                                        columns: itemSchema.fields,
+                                        listData: $listTaskData
+                                    )
+                                }
+                                .padding(12)
+                                .background(Color(.systemGray6).opacity(0.5))
+                                .cornerRadius(12)
+                            } else if let itemSchema = schema.itemSchema {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Task Details")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+
                                     VStack(alignment: .leading, spacing: 12) {
                                         ForEach(itemSchema.fields) { field in
                                             DynamicInputRenderer(
@@ -263,10 +279,10 @@ struct TaskDetailsView: View {
                                         }
                                     }
                                 }
+                                .padding(12)
+                                .background(Color(.systemGray6).opacity(0.5))
+                                .cornerRadius(12)
                             }
-                            .padding(12)
-                            .background(Color(.systemGray6).opacity(0.5))
-                            .cornerRadius(12)
                         }
 
                         Spacer()
@@ -316,6 +332,9 @@ struct TaskDetailsView: View {
         .onAppear {
             loadTaskData()
         }
+        .onChange(of: listTaskData) { _ in
+            updateStatusFromListData()
+        }
     }
 
     private func loadTaskData() {
@@ -336,13 +355,28 @@ struct TaskDetailsView: View {
            let data = schemaJSON.data(using: .utf8),
            let schema = try? JSONDecoder().decode(InputSchemaDefinition.self, from: data) {
             inputSchema = schema
+            isListTask = schema.fieldType == "list"
         }
 
-        // Load existing input values
-        if let dataJSON = task.dataJSON,
-           let data = dataJSON.data(using: .utf8),
-           let dict = try? JSONDecoder().decode([String: String].self, from: data) {
-            inputValues = dict
+        if isListTask {
+            if let dataJSON = task.dataJSON,
+               let data = dataJSON.data(using: .utf8),
+               let listData = try? JSONDecoder().decode(ListTaskData.self, from: data) {
+                listTaskData = listData
+            } else {
+                listTaskData = ListTaskData()
+            }
+            inputValues = [:]
+            updateStatusFromListData()
+        } else {
+            // Load existing input values for non-list tasks
+            if let dataJSON = task.dataJSON,
+               let data = dataJSON.data(using: .utf8),
+               let dict = try? JSONDecoder().decode([String: String].self, from: data) {
+                inputValues = dict
+            } else {
+                inputValues = [:]
+            }
         }
     }
 
@@ -367,10 +401,34 @@ struct TaskDetailsView: View {
         task.category = taskCategory.isEmpty ? nil : taskCategory
 
         // Save input values as JSON
-        if let encoded = try? JSONEncoder().encode(inputValues),
-           let jsonString = String(data: encoded, encoding: .utf8) {
-            task.dataJSON = jsonString
+        if isListTask {
+            let sanitized = sanitizedListData()
+            let completionRatio = listCompletionRatio(for: sanitized)
+
+            let derivedStatus: String
+            if sanitized.items.isEmpty {
+                derivedStatus = "pending"
+            } else if completionRatio >= 1.0 {
+                derivedStatus = "completed"
+            } else {
+                derivedStatus = "in_progress"
+            }
+
+            task.status = derivedStatus
+            task.updatedAt = Date()
+
+            if let encoded = try? JSONEncoder().encode(sanitized),
+               let jsonString = String(data: encoded, encoding: .utf8) {
+                task.dataJSON = jsonString
+            }
+        } else {
+            if let encoded = try? JSONEncoder().encode(inputValues),
+               let jsonString = String(data: encoded, encoding: .utf8) {
+                task.dataJSON = jsonString
+            }
         }
+
+        task.project?.refreshTaskCounters()
 
         // Save to model context
         do {
@@ -387,6 +445,46 @@ struct TaskDetailsView: View {
             isSaving = false
             print("Error saving task: \(error.localizedDescription)")
         }
+    }
+
+    private func sanitizedListData() -> ListTaskData {
+        let cleanedItems = listTaskData.items.compactMap { item -> ListTaskData.ListItem? in
+            var trimmedValues: [String: String] = [:]
+            var hasContent = false
+
+            for (key, value) in item.values {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    hasContent = true
+                }
+                trimmedValues[key] = trimmed
+            }
+
+            return hasContent ? ListTaskData.ListItem(id: item.id, values: trimmedValues, isCompleted: item.isCompleted) : nil
+        }
+
+        let sanitized = ListTaskData(items: cleanedItems)
+        listTaskData = sanitized
+        return sanitized
+    }
+
+    private func updateStatusFromListData() {
+        guard isListTask else { return }
+        let ratio = listCompletionRatio(for: listTaskData)
+
+        if listTaskData.items.isEmpty {
+            taskStatus = "pending"
+        } else if ratio >= 1.0 {
+            taskStatus = "completed"
+        } else {
+            taskStatus = "in_progress"
+        }
+    }
+
+    private func listCompletionRatio(for data: ListTaskData) -> Double {
+        guard !data.items.isEmpty else { return 0 }
+        let completed = data.items.filter { $0.isCompleted }.count
+        return Double(completed) / Double(data.items.count)
     }
 
     init(task: TaskLocal) {
@@ -414,7 +512,279 @@ struct TaskDetailsView: View {
     }
 }
 
+// MARK: - List Task Editor Components
+
+private struct ListTaskTableEditor: View {
+    let columns: [InputFieldDefinition]
+    @Binding var listData: ListTaskData
+
+    @State private var isPresentingEditor = false
+    @State private var editingValues: [String: String] = [:]
+    @State private var editingItemId: String?
+
+    private var completionStats: (completed: Int, total: Int, ratio: Double) {
+        let total = listData.items.count
+        guard total > 0 else { return (0, 0, 0) }
+        let completed = listData.items.filter { $0.isCompleted }.count
+        let ratio = Double(completed) / Double(total)
+        return (completed, total, ratio)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if listData.items.isEmpty {
+                emptyState
+            } else {
+                tableContent
+            }
+
+            if completionStats.total > 0 {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Progress")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.gray)
+                        Spacer()
+                        Text(String(format: "%.0f%%", completionStats.ratio * 100))
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.blue)
+                    }
+
+                    ProgressView(value: completionStats.ratio)
+                        .progressViewStyle(.linear)
+                        .tint(.blue)
+
+                    Text("\(completionStats.completed) of \(completionStats.total) items complete")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(.gray)
+                }
+                .padding(12)
+                .background(Color.blue.opacity(0.08))
+                .cornerRadius(10)
+            }
+
+            Button(action: startAdd) {
+                Label("Add Item", systemImage: "plus.circle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue.opacity(0.12))
+                    .foregroundColor(.blue)
+                    .cornerRadius(10)
+            }
+        }
+        .sheet(isPresented: $isPresentingEditor) {
+            ListTaskItemEditorSheet(
+                columns: columns,
+                values: $editingValues,
+                isNew: editingItemId == nil,
+                onCancel: { isPresentingEditor = false },
+                onSave: handleSave
+            )
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "rectangle.on.rectangle.angled")
+                .font(.system(size: 30, weight: .semibold))
+                .foregroundColor(.gray.opacity(0.5))
+            Text("No items yet")
+                .font(.system(size: 15, weight: .semibold))
+            Text("Tap \"Add Item\" to start building your list.")
+                .font(.system(size: 13))
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+
+    private var tableContent: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            VStack(spacing: 0) {
+                tableHeader
+                Divider()
+                VStack(spacing: 0) {
+                    ForEach(Array(listData.items.enumerated()), id: \.element.id) { index, item in
+                        HStack(spacing: 12) {
+                            Button(action: { toggleCompletion(for: index) }) {
+                                Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(item.isCompleted ? .green : .gray.opacity(0.6))
+                            }
+                            .buttonStyle(.plain)
+
+                            ForEach(columns) { column in
+                                Text(displayText(for: item, column: column))
+                                    .font(.system(size: 14))
+                                    .foregroundColor(item.isCompleted ? .gray : .primary)
+                                    .strikethrough(item.isCompleted, color: .gray)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.vertical, 10)
+                            }
+
+                            HStack(spacing: 10) {
+                                Button(action: { startEdit(item: item) }) {
+                                    Image(systemName: "pencil")
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+
+                                Button(role: .destructive, action: { deleteItem(at: index) }) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+                            }
+                            .padding(.trailing, 6)
+                        }
+                        .padding(.horizontal, 12)
+                        .background(index.isMultiple(of: 2) ? Color(.systemGray6).opacity(0.65) : Color(.systemBackground))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private var tableHeader: some View {
+        HStack(spacing: 12) {
+            ForEach(columns) { column in
+                Text(column.label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.gray)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
+            }
+            Text("Actions")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.gray)
+                .padding(.vertical, 8)
+                .padding(.trailing, 8)
+        }
+        .padding(.horizontal, 12)
+    }
+
+    private func displayText(for item: ListTaskData.ListItem, column: InputFieldDefinition) -> String {
+        let rawValue = item.values[column.name] ?? ""
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "—" : trimmed
+    }
+
+    private func startAdd() {
+        editingItemId = nil
+        editingValues = defaultValues()
+        isPresentingEditor = true
+    }
+
+    private func startEdit(item: ListTaskData.ListItem) {
+        editingItemId = item.id
+        let trimmedValues = item.values.mapValues { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        editingValues = defaultValues().merging(trimmedValues) { _, new in new }
+        isPresentingEditor = true
+    }
+
+    private func deleteItem(at index: Int) {
+        guard index >= 0 && index < listData.items.count else { return }
+        listData.items.remove(at: index)
+    }
+
+    private func handleSave() {
+        let trimmedValues = columns.reduce(into: [String: String]()) { result, column in
+            let value = editingValues[column.name] ?? ""
+            result[column.name] = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        if let existingId = editingItemId,
+           let index = listData.items.firstIndex(where: { $0.id == existingId }) {
+            listData.items[index].values = trimmedValues
+        } else {
+            let newItem = ListTaskData.ListItem(id: UUID().uuidString, values: trimmedValues, isCompleted: false)
+            listData.items.append(newItem)
+        }
+
+        isPresentingEditor = false
+        editingItemId = nil
+        editingValues = defaultValues()
+    }
+
+    private func toggleCompletion(for index: Int) {
+        guard index >= 0 && index < listData.items.count else { return }
+        listData.items[index].isCompleted.toggle()
+    }
+
+    private func defaultValues() -> [String: String] {
+        columns.reduce(into: [String: String]()) { result, column in
+            result[column.name] = ""
+        }
+    }
+}
+
+private struct ListTaskItemEditorSheet: View {
+    let columns: [InputFieldDefinition]
+    @Binding var values: [String: String]
+    let isNew: Bool
+    let onCancel: () -> Void
+    let onSave: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                ForEach(columns) { column in
+                    Section(column.label) {
+                        TextField(
+                            column.label,
+                            text: Binding(
+                                get: { values[column.name] ?? "" },
+                                set: { values[column.name] = $0 }
+                            )
+                        )
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.sentences)
+                    }
+                }
+            }
+            .navigationTitle(isNew ? "Add Item" : "Edit Item")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: onSave)
+                        .disabled(!isValid)
+                }
+            }
+        }
+    }
+
+    private var isValid: Bool {
+        columns.allSatisfy { column in
+            guard column.required else { return true }
+            let trimmed = (values[column.name] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return !trimmed.isEmpty
+        }
+    }
+}
+
 #Preview {
-    let task = TaskLocal(title: "Sample Task", type: "list")
-    TaskDetailsView(task: task)
+    let columns = [
+        InputFieldDefinition(name: "guest_name", label: "Guest Name", type: "text", required: true),
+        InputFieldDefinition(name: "contact_info", label: "Contact Info", type: "text", required: false),
+        InputFieldDefinition(name: "notes", label: "Notes", type: "text", required: false)
+    ]
+
+    let schema = InputSchemaDefinition(fieldType: "list", itemSchema: InputSchemaDefinition.ItemSchema(fields: columns))
+    let task = TaskLocal(title: "Guest List", taskDescription: "Track guests and contact details", type: "list")
+    if let data = try? JSONEncoder().encode(schema) {
+        task.inputSchemaJSON = String(data: data, encoding: .utf8)
+    }
+    return NavigationStack {
+        TaskDetailsView(task: task)
+            .modelContainer(for: TaskLocal.self, inMemory: true)
+    }
 }

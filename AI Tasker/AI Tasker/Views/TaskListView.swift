@@ -180,10 +180,10 @@ struct TaskListView: View {
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.gray)
                             HStack(spacing: 4) {
-                                Text("\(project.completedTaskCount)")
+                                Text("\(project.computedCompletedTaskCount)")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.green)
-                                Text("/ \(project.taskCount)")
+                                Text("/ \(project.computedTaskCount)")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.gray)
                             }
@@ -266,7 +266,7 @@ struct TaskListView: View {
     }
 
     var progressPercentage: Double {
-        project.taskCount > 0 ? Double(project.completedTaskCount) / Double(project.taskCount) : 0
+        project.computedProgress
     }
 
     var sortLabel: String {
@@ -455,6 +455,8 @@ struct TaskRowViewEnhanced: View {
     private func toggleStatus() {
         task.status = nextStatus
         task.updatedAt = Date()
+
+        task.project?.refreshTaskCounters()
 
         do {
             try modelContext.save()
