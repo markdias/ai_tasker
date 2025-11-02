@@ -5,6 +5,7 @@ import EventKit
 
 /// Navigation flow states
 enum AppFlow: Equatable {
+    case onboarding
     case home
     case questionForm
     case taskReview
@@ -16,6 +17,14 @@ enum AppFlow: Equatable {
 class AppState {
     // MARK: - Navigation
     var currentFlow: AppFlow = .home
+    var hasCompletedOnboarding: Bool {
+        get {
+            UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "hasCompletedOnboarding")
+        }
+    }
 
     // MARK: - Session State (transient during flow)
     var currentPrompt: PromptLocal?
@@ -31,7 +40,10 @@ class AppState {
     private let keychainManager = KeychainManager.shared
 
     init() {
-        // Initialize default state
+        // Show onboarding on first launch
+        if !hasCompletedOnboarding {
+            currentFlow = .onboarding
+        }
     }
 
     // MARK: - Navigation Methods

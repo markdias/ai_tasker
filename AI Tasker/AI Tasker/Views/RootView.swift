@@ -7,6 +7,14 @@ struct RootView: View {
         ZStack {
             Group {
                 switch appState.currentFlow {
+                case .onboarding:
+                    OnboardingView()
+                        .environment(appState)
+                        .onDisappear {
+                            // Mark onboarding as complete when dismissed
+                            appState.hasCompletedOnboarding = true
+                            appState.currentFlow = .home
+                        }
                 case .home:
                     HomeView(appState: appState)
                 case .questionForm:
