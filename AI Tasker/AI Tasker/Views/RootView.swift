@@ -33,17 +33,15 @@ struct RootView: View {
 
 // Wrapper to handle onboarding completion
 struct OnboardingViewWrapper: View {
-    @Environment(\.dismiss) var dismiss
     var appState: AppState
 
     var body: some View {
-        OnboardingView()
-            .environment(appState)
-            .onDisappear {
-                // Mark onboarding as complete when dismissed
-                appState.hasCompletedOnboarding = true
-                appState.currentFlow = .home
-            }
+        OnboardingView(onComplete: {
+            // Mark onboarding as complete and navigate to home
+            appState.hasCompletedOnboarding = true
+            appState.currentFlow = .home
+        })
+        .environment(appState)
     }
 }
 

@@ -2,12 +2,14 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.scenePhase) var scenePhase
     @State private var currentStep: Int = 0
     @State private var apiKeyProvided: Bool = false
     @State private var apiKeyInput: String = ""
     @State private var showAPIKeyInput: Bool = false
     @State private var apiKeySaved: Bool = false
     @State private var apiSaveMessage: String = ""
+    var onComplete: (() -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -433,8 +435,13 @@ struct OnboardingView: View {
     private func nextStep() {
         if currentStep == 3 {
             // Mark onboarding as complete before dismissing
-            // This will be handled by RootView's onDisappear
-            dismiss()
+            if let onComplete = onComplete {
+                // Use callback if provided
+                onComplete()
+            } else {
+                // Fallback to dismiss
+                dismiss()
+            }
         } else {
             withAnimation {
                 currentStep += 1
