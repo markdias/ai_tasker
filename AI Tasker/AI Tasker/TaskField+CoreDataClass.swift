@@ -35,7 +35,7 @@ public class TaskField: NSManagedObject {
 
     public var fieldTypeValue: FieldType {
         get {
-            FieldType(rawValue: fieldType ?? "text") ?? .text
+            FieldType(rawValue: fieldType) ?? .text
         }
         set {
             fieldType = newValue.rawValue

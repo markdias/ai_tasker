@@ -277,7 +277,7 @@ private extension Int16 {
     }
 }
 
-struct ChatGPTResponse: Codable {
+private struct ChatGPTResponse: Codable {
     let choices: [Choice]
 
     struct Choice: Codable {
