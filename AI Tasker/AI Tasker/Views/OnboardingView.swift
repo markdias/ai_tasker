@@ -4,6 +4,8 @@ struct OnboardingView: View {
     @Environment(\.dismiss) var dismiss
     @State private var currentStep: Int = 0
     @State private var apiKeyProvided: Bool = false
+    @State private var apiKeyInput: String = ""
+    @State private var showAPIKeyInput: Bool = false
 
     var body: some View {
         ZStack {
@@ -173,39 +175,95 @@ struct OnboardingView: View {
             }
             .multilineTextAlignment(.center)
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Why is this needed?")
-                    .font(.system(size: 14, weight: .semibold))
+            if !showAPIKeyInput {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Why is this needed?")
+                        .font(.system(size: 14, weight: .semibold))
 
-                Text("Promptodo uses ChatGPT to understand your prompts and generate smart tasks. You'll need an OpenAI API key from your account.")
+                    Text("Promptodo uses ChatGPT to understand your prompts and generate smart tasks. You'll need an OpenAI API key from your account.")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(.gray)
+
+                    Text("Steps:")
+                        .font(.system(size: 14, weight: .semibold))
+                        .padding(.top, 8)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("1. Go to platform.openai.com")
+                        Text("2. Sign up or log in")
+                        Text("3. Create an API key")
+                        Text("4. Paste it below")
+                    }
                     .font(.system(size: 13, weight: .regular))
                     .foregroundColor(.gray)
-
-                Text("Steps:")
-                    .font(.system(size: 14, weight: .semibold))
-                    .padding(.top, 8)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("1. Go to platform.openai.com")
-                    Text("2. Sign up or log in")
-                    Text("3. Create an API key")
-                    Text("4. Paste it in Settings")
                 }
-                .font(.system(size: 13, weight: .regular))
-                .foregroundColor(.gray)
-            }
-            .padding(16)
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
+                .padding(16)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
 
-            NavigationLink(destination: APISettingsView()) {
-                Text("Add API Key Now")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(12)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                Button(action: {
+                    showAPIKeyInput = true
+                }) {
+                    Text("Add API Key Now")
+                        .font(.system(size: 16, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(12)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+            } else {
+                // API Key Input Form
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Enter your OpenAI API Key")
+                        .font(.system(size: 14, weight: .semibold))
+
+                    SecureField("sk-...", text: $apiKeyInput)
+                        .padding(12)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(8)
+                        .font(.system(size: 14))
+
+                    Text("Your API key is stored securely in your device's keychain and never sent to external servers.")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(.gray)
+
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            showAPIKeyInput = false
+                            apiKeyInput = ""
+                        }) {
+                            Text("Cancel")
+                                .font(.system(size: 14, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(12)
+                                .background(Color(.systemGray4))
+                                .foregroundColor(.primary)
+                                .cornerRadius(8)
+                        }
+
+                        Button(action: {
+                            if !apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty {
+                                // Save API key to keychain
+                                KeychainManager.shared.saveAPIKey(apiKeyInput)
+                                apiKeyProvided = true
+                                showAPIKeyInput = false
+                            }
+                        }) {
+                            Text("Save & Continue")
+                                .font(.system(size: 14, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(12)
+                                .background(apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                        }
+                        .disabled(apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                .padding(16)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
             }
 
             Button(action: {
