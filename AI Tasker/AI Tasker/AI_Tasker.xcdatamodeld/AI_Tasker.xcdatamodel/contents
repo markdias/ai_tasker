@@ -25,8 +25,8 @@
         <relationship name="fields" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TaskField" inverseName="task" inverseEntity="TaskField"/>
     </entity>
     <entity name="TaskField" representedClassName="TaskField" syncable="YES" codeGenerationType="none">
-        <attribute name="fieldName" optional="NO" attributeType="String" defaultValue="Field"/>
-        <attribute name="fieldType" optional="NO" attributeType="String" defaultValue="text"/>
+        <attribute name="fieldName" optional="NO" attributeType="String" defaultValueString="Field"/>
+        <attribute name="fieldType" optional="NO" attributeType="String" defaultValueString="text"/>
         <attribute name="fieldValue" optional="YES" attributeType="String"/>
         <attribute name="fieldOrder" optional="YES" attributeType="Integer 16" defaultValue="0" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
