@@ -30,11 +30,20 @@
         <attribute name="fieldValue" optional="YES" attributeType="String"/>
         <attribute name="fieldOrder" optional="YES" attributeType="Integer 16" defaultValue="0" usesScalarValueType="YES"/>
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="listItemFields" optional="YES" attributeType="String"/>
         <relationship name="task" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="Task" inverseName="fields" inverseEntity="Task"/>
+        <relationship name="listItems" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ListItem" inverseName="field" inverseEntity="ListItem"/>
+    </entity>
+    <entity name="ListItem" representedClassName="ListItem" syncable="YES" codeGenerationType="none">
+        <attribute name="itemData" optional="NO" attributeType="String" defaultValueString="{}"/>
+        <attribute name="itemOrder" optional="YES" attributeType="Integer 16" defaultValue="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="field" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="TaskField" inverseName="listItems" inverseEntity="TaskField"/>
     </entity>
     <elements>
         <element name="Project" positionX="-63" positionY="-234" width="128" height="163"/>
         <element name="Task" positionX="-63" positionY="-18" width="128" height="207"/>
         <element name="TaskField" positionX="0" positionY="0" width="128" height="118"/>
+        <element name="ListItem" positionX="100" positionY="0" width="128" height="88"/>
     </elements>
 </model>

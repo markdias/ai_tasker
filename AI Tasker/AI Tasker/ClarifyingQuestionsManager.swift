@@ -160,10 +160,15 @@ class ClarifyingQuestionsManager {
         based on the user's goal and answers to clarifying questions. Generate 15-30 specific,
         actionable tasks that cover all aspects needed to accomplish the goal.
 
-        For each task, determine relevant fields that the user should fill in. For example:
-        - "Book Accommodation" task should have fields: hotel_name, check_in_date, check_out_date, room_type, confirmation_number
-        - "Create Guest List" task should have fields: guest_name, contact_info, dietary_restrictions
-        - "Order Catering" task should have fields: caterer_name, menu_items, headcount, delivery_time
+        For each task, determine relevant fields that the user should fill in. Be intelligent about list fields:
+
+        For LIST-type fields, define the sub-fields for each list item. Examples:
+        - "Create Guest List" task with listItemFields: ["Guest Name", "Email", "Dietary Restrictions", "Plus-Ones"]
+          Each guest item will have these 4 fields the user can fill in
+        - "Arrange Flowers" task with listItemFields: ["Flower Type", "Quantity", "Color", "Location"]
+          Each flower arrangement will have these details
+        - "Menu Planning" task with listItemFields: ["Dish Name", "Portion Size", "Ingredients", "Preparation Time"]
+          Each menu item will capture these details
 
         Return a JSON array of tasks with this exact format:
         {
@@ -176,8 +181,7 @@ class ClarifyingQuestionsManager {
                     "fields": [
                         {"fieldName": "Hotel Name", "fieldType": "text", "fieldOrder": 1},
                         {"fieldName": "Check-in Date", "fieldType": "date", "fieldOrder": 2},
-                        {"fieldName": "Room Type", "fieldType": "text", "fieldOrder": 3},
-                        {"fieldName": "Confirmation Number", "fieldType": "text", "fieldOrder": 4}
+                        {"fieldName": "Room Type", "fieldType": "text", "fieldOrder": 3}
                     ]
                 },
                 {
@@ -186,18 +190,30 @@ class ClarifyingQuestionsManager {
                     "estimatedTime": 45,
                     "priority": "high",
                     "fields": [
-                        {"fieldName": "Guest Name", "fieldType": "text", "fieldOrder": 1},
-                        {"fieldName": "Contact", "fieldType": "text", "fieldOrder": 2},
-                        {"fieldName": "Dietary Restrictions", "fieldType": "text", "fieldOrder": 3}
+                        {
+                            "fieldName": "Guests",
+                            "fieldType": "list",
+                            "fieldOrder": 1,
+                            "listItemFields": ["Name", "Email", "Phone", "Dietary Restrictions", "Plus-Ones"]
+                        }
                     ]
                 }
             ]
         }
 
         Field Types: text, number, date, toggle, list
+
+        For list fields:
+        - Include listItemFields array with 3-5 field names
+        - Each field name should be concise and clear
+        - For guest lists: Name, Email, Phone, Dietary Restrictions, plus-Ones, etc.
+        - For shopping lists: Item, Quantity, Price, Store, Priority
+        - For contact lists: Name, Phone, Email, Address, Notes
+
         Guidelines:
         - Each task should be specific and actionable
         - Include relevant fields for tasks that need detailed information
+        - Use list fields when collecting multiple similar items (guests, vendors, menu items, etc.)
         - Simple tasks can have empty or minimal fields
         - Distribute priorities: some high, some medium, some low
         - Estimated time should be in minutes (15-120 range)

@@ -229,12 +229,79 @@ class OpenAIManager {
             ?? dictionary["minutes"]
             ?? dictionary["estimatedMinutes"]
 
+        let fieldsArray = parseGeneratedFields(from: dictionary)
+
         return GeneratedTask(
             title: title,
             description: description,
             estimatedTime: parseEstimatedTime(from: timeValue),
-            priority: priority
+            priority: priority,
+            fields: fieldsArray
         )
+    }
+
+    private func parseGeneratedFields(from dictionary: [String: Any]) -> [GeneratedTaskField]? {
+        if let stringFields = (dictionary["fields"] as? [String])
+            ?? (dictionary["taskFields"] as? [String]) {
+            let mapped = stringFields
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .enumerated()
+                .map { index, name in
+                    GeneratedTaskField(fieldName: name, fieldType: "text", fieldOrder: Int16(clamping: index))
+                }
+            return mapped.isEmpty ? nil : mapped
+        }
+
+        let fieldCandidates: [[String: Any]]? =
+            (dictionary["fields"] as? [[String: Any]]) ??
+            (dictionary["taskFields"] as? [[String: Any]]) ??
+            (dictionary["details"] as? [[String: Any]])
+
+        guard let fieldCandidates = fieldCandidates else { return nil }
+
+        let mappedFields = fieldCandidates.compactMap { fieldDict -> GeneratedTaskField? in
+            guard let name = fieldDict["fieldName"] as? String ?? fieldDict["name"] as? String else { return nil }
+            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else { return nil }
+
+            let type = (fieldDict["fieldType"] as? String
+                ?? fieldDict["type"] as? String
+                ?? "text").trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let orderValue = fieldDict["fieldOrder"]
+                ?? fieldDict["order"]
+                ?? fieldDict["index"]
+
+            return GeneratedTaskField(
+                fieldName: trimmedName,
+                fieldType: type.isEmpty ? "text" : type,
+                fieldOrder: parseFieldOrder(from: orderValue)
+            )
+        }
+
+        return mappedFields.isEmpty ? nil : mappedFields
+    }
+
+    private func parseFieldOrder(from value: Any?) -> Int16? {
+        guard let value = value else { return nil }
+        switch value {
+        case let intValue as Int:
+            return Int16(clamping: intValue)
+        case let int16Value as Int16:
+            return int16Value
+        case let doubleValue as Double:
+            guard doubleValue.isFinite else { return nil }
+            return Int16(clamping: Int(doubleValue))
+        case let number as NSNumber:
+            return Int16(clamping: number.intValue)
+        case let stringValue as String:
+            let trimmed = stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let intValue = Int(trimmed) else { return nil }
+            return Int16(clamping: intValue)
+        default:
+            return nil
+        }
     }
 }
 
@@ -251,6 +318,7 @@ struct GeneratedTaskField: Codable {
     let fieldName: String
     let fieldType: String
     let fieldOrder: Int16?
+    let listItemFields: [String]?  // For list-type fields: ["Guest Name", "Contact", "Dietary Restrictions"]
 }
 
 private struct GeneratedTaskContainer: Decodable {

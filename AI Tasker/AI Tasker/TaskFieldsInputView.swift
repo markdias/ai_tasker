@@ -36,11 +36,6 @@ struct TaskFieldsInputView: View {
 struct TaskFieldInputRow: View {
     @ObservedObject var field: TaskField
     let viewContext: NSManagedObjectContext
-    @State private var textValue = ""
-    @State private var numberValue = ""
-    @State private var dateValue = Date()
-    @State private var toggleValue = false
-    @State private var listItems: [String] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -93,68 +88,10 @@ struct TaskFieldInputRow: View {
                 ))
 
             case .list:
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(listItems.enumerated()), id: \.offset) { index, item in
-                        HStack {
-                            TextField("Item \(index + 1)", text: Binding(
-                                get: { item },
-                                set: {
-                                    var items = listItems
-                                    items[index] = $0
-                                    listItems = items
-                                    updateListValue()
-                                }
-                            ))
-                            .textFieldStyle(.roundedBorder)
-
-                            Button(action: {
-                                listItems.remove(at: index)
-                                updateListValue()
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.red)
-                            }
-                        }
-                    }
-
-                    Button(action: {
-                        listItems.append("")
-                        updateListValue()
-                    }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(.blue)
-                            Text("Add Item")
-                        }
-                        .font(.caption)
-                    }
-                }
+                SmartListInputView(field: field)
             }
         }
         .padding(.vertical, 4)
-        .onAppear {
-            loadFieldValue()
-        }
-    }
-
-    private func loadFieldValue() {
-        switch field.fieldTypeValue {
-        case .text:
-            textValue = field.fieldValue ?? ""
-        case .number:
-            numberValue = field.fieldValue ?? ""
-        case .date:
-            // Date is handled in binding
-            break
-        case .toggle:
-            toggleValue = field.fieldValue == "true"
-        case .list:
-            if let jsonStr = field.fieldValue,
-               let data = jsonStr.data(using: .utf8),
-               let items = try? JSONDecoder().decode([String].self, from: data) {
-                listItems = items
-            }
-        }
     }
 
     private func saveField() {
@@ -162,14 +99,6 @@ struct TaskFieldInputRow: View {
             try viewContext.save()
         } catch {
             print("Error saving field: \(error)")
-        }
-    }
-
-    private func updateListValue() {
-        if let data = try? JSONEncoder().encode(listItems),
-           let jsonStr = String(data: data, encoding: .utf8) {
-            field.fieldValue = jsonStr
-            saveField()
         }
     }
 }

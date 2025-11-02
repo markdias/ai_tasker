@@ -24,6 +24,7 @@ extension Task {
     @NSManaged public var scheduledTime: Date?
     @NSManaged public var sessionId: String?
     @NSManaged public var project: Project?
+    @NSManaged public var fields: NSSet?
 }
 
 extension Task: Identifiable {}

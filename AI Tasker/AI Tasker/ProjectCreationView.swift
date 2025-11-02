@@ -404,6 +404,14 @@ struct ProjectCreationView: View {
                         newField.fieldOrder = field.fieldOrder ?? Int16(index)
                         newField.createdAt = Date()
                         newField.task = newTask
+
+                        // Store list item field definitions if this is a list field
+                        if let listItemFields = field.listItemFields {
+                            if let data = try? JSONEncoder().encode(listItemFields),
+                               let jsonStr = String(data: data, encoding: .utf8) {
+                                newField.listItemFields = jsonStr
+                            }
+                        }
                     }
                 }
             }
