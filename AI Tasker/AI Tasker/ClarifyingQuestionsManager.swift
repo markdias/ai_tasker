@@ -37,10 +37,12 @@ class ClarifyingQuestionsManager {
     ) {
         let systemPrompt = """
         You are a helpful project planning assistant. Your job is to ask clarifying questions
-        to help users better define their project scope. Generate EXACTLY 5 specific, practical questions
-        that will help you understand the project better.
+        to help users better define their project scope.
 
-        Return a JSON array with exactly 5 questions in this format:
+        CRITICAL: Generate EXACTLY 5 specific, practical questions. No more, no less.
+
+        Return ONLY valid JSON as a plain array with exactly 5 question objects. Do not include any markdown, code blocks, or extra text.
+        Return the JSON in this exact format:
         [
             {
                 "question": "What is the date of the party?",
@@ -69,13 +71,17 @@ class ClarifyingQuestionsManager {
             }
         ]
 
-        Types: freeText, multipleChoice, date, number
+        Valid types: freeText, multipleChoice, date, number
+        Always use these exact type names.
+        For freeText and date/number types, options should be null.
+        For multipleChoice, provide an array of options.
         """
 
         let userPrompt = """
         Goal: \(goal)
 
-        Please generate clarifying questions to help better plan this project.
+        Please generate exactly 5 clarifying questions to help better plan this project.
+        Remember: Return ONLY the JSON array, no other text or markdown.
         """
 
         let requestBody: [String: Any] = [
@@ -266,10 +272,12 @@ class ClarifyingQuestionsManager {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
 
+        // Try direct array first
         if let array = try? decoder.decode([QuestionDTO].self, from: data), !array.isEmpty {
             return array.map(mapQuestionDTO)
         }
 
+        // Try container with named fields
         if let container = try? decoder.decode(ClarifyingQuestionContainer.self, from: data),
            let questions = container.questionsList, !questions.isEmpty {
             return questions.map(mapQuestionDTO)
@@ -281,18 +289,21 @@ class ClarifyingQuestionsManager {
             ]))
         }
 
+        // Try direct array of dictionaries
         if let array = jsonObject as? [[String: Any]] {
             let questions = mapQuestionDictionaries(array)
             if !questions.isEmpty { return questions }
         } else if let dictionary = jsonObject as? [String: Any] {
-            if let single = buildQuestion(from: dictionary) {
-                return [single]
-            }
-
+            // Try nested arrays in dictionary - prioritize checking all values
             let nestedArrays = dictionary.values.compactMap { $0 as? [[String: Any]] }
             for array in nestedArrays {
                 let questions = mapQuestionDictionaries(array)
                 if !questions.isEmpty { return questions }
+            }
+
+            // Only try single question as last resort
+            if let single = buildQuestion(from: dictionary) {
+                return [single]
             }
         }
 
